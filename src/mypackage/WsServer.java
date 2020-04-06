@@ -68,7 +68,7 @@ public class WsServer extends HttpServlet{
             
         if (this_user.input(Input.get(0),Input.get(1)))
             for (String key : Users.keySet()) { 
-                Users.get(key).send_message(Input.get(1),this_user.get_name(),Message.CHAT); //Was message
+                Users.get(key).send_message(Input.get(1),this_user.getChatName(),Message.CHAT); //Was message
             } 
         this_user.Refresh();
 

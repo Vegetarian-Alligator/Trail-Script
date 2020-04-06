@@ -6,51 +6,31 @@ import java.util.regex.Pattern;
 
 
 import java.util.*;
-/*
-This is a file for reading "trail" scripts.  It will systematically iterate through the game at the request of whatever is calling it.
-The functions returned will suggest an action to the caller.  These actions can be:
-
-CONTINUE: Ready to advance to the next object
-INQUIRE: I don't have 
-
-*/
-/*
-final class dataReturn
-{
-   public String myData;
-   public int    myInt;
-   public float  myFloat;
-   public boolean stringData; 
-   public dataReturn(String myData, int, myInt, float myFloat,boolean stringData){
-        this.myD
-   }
-}
-*/
 
 public class TrailBlazer {
-protected TrailBlazes my_blazes; //The status of this trail
-protected String Command;
-private BufferedReader br;
-User myUser;
-    TrailBlazer (String startPath, User calling_user){
+    protected TrailBlazes my_blazes; //The status of this trail
+    protected String Command;
+    private BufferedReader br;
+    User myUser;
+    TrailBlazer (String startPath, User calling_user) {
         myUser=calling_user;
         //myUser.send_message("Testing the new Trailblazer system","Server",Message.CHAT);
-         
-     
-        try {    
-            this.br = new BufferedReader(new FileReader(startPath+"trailhead.trail")); 
+
+
+        try {
+            this.br = new BufferedReader(new FileReader(startPath+"trailhead.trail"));
             my_blazes=TrailBlazes.CONTINUE;
             this.Parse();
 
         } catch (IOException e) { //NoSuchElementException
             //myUser.send_message("IO Exception has occured "+ e.toString(),"Server",Message.CHAT);
         }
-        //while ((st = br.readLine()) != null) 
+        //while ((st = br.readLine()) != null)
 
-         
+
     }
 
-    public void Parse(){
+    public void Parse() {
         while (my_blazes==TrailBlazes.CONTINUE) {
             this.readNextCommand();
         }
@@ -63,40 +43,47 @@ User myUser;
     }
 
     private String parseBracket(String parseObject) throws Exception { //Can only be called from readNextCommand, therefore throwing is acceptable
-        /*I really can't believe this worked the first time I built it - see file "cool"*/        
+        /*I really can't believe this worked the first time I built it - see file "cool"*/
 
         String Result="";
         String Name;//=""; //Initilization Unneeded
         int look=0;// = parseObject.indexOf('[');
-        if (parseObject.indexOf('[') != -1) 
+        if (parseObject.indexOf('[') != -1)
             do {
-                try {                
-                try{Result+=parseObject.substring(look,parseObject.indexOf('['));} catch (Exception e){break;} //Because the solution will be behind the start, exception is thrown              
-                Name = parseObject.substring(parseObject.indexOf('[',look)+1,parseObject.indexOf(']',look));
+                try {
+                    try {
+                        Result+=parseObject.substring(look,parseObject.indexOf('[',look));   //Because the solution will be behind the start, exception is thrown
+                    }
+                    catch (Exception e) {
+                        break;
+                    }
+                    Name = parseObject.substring(parseObject.indexOf('[',look)+1,parseObject.indexOf(']',look));
+                    //myUser.send_message("Name is " + Name,"Server: ",Message.CHAT);
                 } //"Consuming" the string might be faster, somehow?
-                catch (Exception e){
+                catch (Exception e) {
                     throw new IOException(e.toString()+"This occured inside of ParseBracket"); //But what happens if only ONE of these is -1?  In that case, I guess it gets ignored
                     //break; //Ignores certain cases of mismatched tags
                 }
                 Attribute userAttribute = myUser.returnAttribute(Name);
                 if (userAttribute==null) Result+="Attribute not found";
                 else {
-                    Result+=userAttribute.getData();
+                    if (userAttribute.getType().equals("Text")) Result+=userAttribute.getData();
+                    else Result+=Integer.toString(userAttribute.getintData());
                 }
                 look=parseObject.indexOf(']',look)+1; //Plus one to keep from finding the same one over and over/
-            }while (look!=0);
-        
-            
-//            Result+=parseObject.substring(parseObject.length()-parseObject.,parseObject.length());
-              Result+=parseObject.substring(look,parseObject.length());
-              return Result;   
-        }
+            } while (look!=0);
 
-    private String extractTag(String parseObject, char startTag, char endTag) throws Exception{         
-        //findCommand=Pattern.compile("\\*+?(.+)\\*+");       
+
+//            Result+=parseObject.substring(parseObject.length()-parseObject.,parseObject.length());
+        Result+=parseObject.substring(look,parseObject.length());
+        return Result;
+    }
+
+    private String extractTag(String parseObject, char startTag, char endTag) throws Exception {
+        //findCommand=Pattern.compile("\\*+?(.+)\\*+");
         int i=0;
         if (parseObject.charAt(i)!=startTag) throw new IOException("Something not a tag was treated as a tag");
-        for (i=1;i<parseObject.length();i++) {
+        for (i=1; i<parseObject.length(); i++) {
             if (parseObject.charAt(i)==startTag) if (i < (parseObject.length()-1) && startTag != endTag) throw new IOException("Extranous tag: " + startTag);
             if (parseObject.charAt(i)==endTag) if (i < (parseObject.length()-1)) throw new IOException("Extranous tag: " + endTag);
         }
@@ -104,163 +91,158 @@ User myUser;
     }
 
     private Attribute dataToAttribute(String attrName, String parseObject) {
-        int result;        
+        int result;
         try {
-             //myUser.send_message("Trying to parse that int on + " + attrData,"Server",Message.CHAT);
-             result = Integer.parseInt(parseObject);
-             return new Attribute("Number",attrName.substring(0,attrName.length()),null,result,result); //Type conversions
+            result = Integer.parseInt(parseObject);
+            //myUser.send_message("Trying to parse that int on + " + parseObject,"Server",Message.CHAT);
+            return new Attribute("Numeric",attrName,null,result,result); //Type conversions
         } catch (NumberFormatException nfe) {
-             return new Attribute("Text",attrName.substring(0,attrName.length()),parseObject,0,0);
+            return new Attribute("Text",attrName,parseObject,0,0);
         }
     }
 
     public void readNextCommand() {
-            String st;
-            try {
-                st=br.readLine();
-            } catch(Exception e) {
-                my_blazes=TrailBlazes.INVALID;
-                myUser.send_message("Probably end of file: "+ e.toString(),"Server",Message.CHAT);
-                return;
-            }
+        String st;
+        try {
+            st=br.readLine();
+        } catch(Exception e) {
+            my_blazes=TrailBlazes.INVALID;
+            myUser.send_message("Probably end of file: "+ e.toString(),"Server",Message.CHAT);
+            return;
+        }
 
-            
-            try { 
+
+        try {
             if (st==null) {
                 //myUser.send_message("End of file","Server",Message.CHAT);
                 my_blazes=TrailBlazes.INVALID;
                 return;
             }
-    
-             if (st.equals("---")==false) {
+
+            if (st.equals("---")==false) {
                 myUser.send_message("malformed Result was: ","Server: "+st,Message.CHAT);
                 my_blazes=TrailBlazes.INVALID;
                 return;
             }
-                       
-
-            st=this.br.readLine(); 
 
 
-                String command = this.extractTag(st, '*','*');
+            st=this.br.readLine();
 
-                if (command.equals("PRINT")) { //The User 
-                    //myUser.send_message("Entering the print subroutine","Server",Message.CHAT);
-                    st=this.br.readLine();
-                    if (this.br.readLine().equals("---")) { //Send the message
-                        String Result=this.parseBracket(st);                        
-                        myUser.send_message(Result,"Server",Message.CHAT); //This line of code Actually send the message!
-                        my_blazes=TrailBlazes.CONTINUE;
-                        return;
-                        }
-                   }
-                        
-                        /*The following section needs to return the attribute value.. then print that
-                    } else throw new IOException("Error somewhere in the printing file.");//{my_blazes=TrailBlazes.INVALID;return;}
+
+            String command = this.extractTag(st, '*','*');
+
+            if (command.equals("PRINT")) { //The User
+                //myUser.send_message("Entering the print subroutine","Server",Message.CHAT);
+                st=this.br.readLine();
+                if (this.br.readLine().equals("---")) { //Send the message
+                    String Result=this.parseBracket(st);
+                    myUser.send_message(Result,"Server",Message.CHAT); //This line of code Actually send the message!
+                    my_blazes=TrailBlazes.CONTINUE;
+                    return;
                 }
-                
-                /*Start of the SOCIAL command block*/
-                //This should accept PHYSICAL, CHAT, and SOLO, meaning no chat functionality
-                if (command.equals("SOCIAL")){
-                    st=br.readLine();
-                    
-                    if (this.br.readLine().equals("---")) {
-                        if (st.equals("CHAT"))myUser.in_public_chat=true;
-                        if (st.equals("SOLO"))myUser.in_public_chat=false;
-                        my_blazes=TrailBlazes.CONTINUE;
-                    }
-                }
+            }
 
-                if (command.equals("GET_ATTRIBUTE")) {
-                    //myUser.send_message("Entering Get Attribute","Server", Message.CHAT);
-                    String attrName;
-                    String attrData;                    
-                    attrName=br.readLine();
-                    int count=0;
-                    int closecount=0;
-                    for (int i = 0; i < attrName.length(); i++) {
-                        if (attrName.charAt(i) == '<') count++;
-                        if (attrName.charAt(i) == '>') closecount++;
-                    }
-                    //myUser.send_message("attrName: " + attrName,"Server",Message.CHAT);
-                    if (closecount!=count) System.out.println("Parsing Error!  Mismatched brackets");
-                    if (closecount==0){ //We just assign the variable
-                        //myUser.send_message("Reading line...","Server",Message.CHAT);                        
-                        attrData=br.readLine(); 
-                        //myUser.send_message("attrData: " + attrData,"Server",Message.CHAT);
-                        int result;                        
-                    /*
-                    try {
-                        //myUser.send_message("Trying to parse that int on + " + attrData,"Server",Message.CHAT);
-                            result = Integer.parseInt(attrData);
-                            myUser.setAttribute("Number",attrName.substring(0,attrName.length()),null,result,result); //Type conversions
-                        } catch (NumberFormatException nfe) {
-                            myUser.setAttribute("Text",attrName.substring(0,attrName.length()),attrData,0,0);
-                        }
-                     */
-                        Attribute createAttr;
-                        createAttr=this.dataToAttribute(attrName,attrData);
-                        myUser.setAttribute(createAttr);
-                        String Choice=br.readLine();
-                        if (Choice.equals("---")){
-                            my_blazes=TrailBlazes.CONTINUE;
-                            return;
-                        } else throw new IOException();
-                    }
-                
-                if (closecount > 1) throw new IOException("Too many brackets");//System.out.println("Parsing Error: Too many Brackets");
-                if (closecount == 1) { //Get the variable from the user - should probably use regex to make sure the brackets make sense, we don't yet
+            /*Start of the SOCIAL command block*/
+            //This should accept PHYSICAL, CHAT, and SOLO, meaning no chat functionality
+            if (command.equals("SOCIAL")) {
+                st=br.readLine();
+
+                if (this.br.readLine().equals("---")) {
+                    if (st.equals("CHAT"))myUser.in_public_chat=true;
+                    if (st.equals("SOLO"))myUser.in_public_chat=false;
+                    my_blazes=TrailBlazes.CONTINUE;
+                }
+            }
+
+            if (command.equals("GET_ATTRIBUTE")) {
+                String attrName;
+                String attrData;
+                attrName=br.readLine();
+                try { //If the first line does not generate an error, we need to ask the user what is up....
+                    String aName;                    
+                    //myUser.send_message(" Reading Tag " + attrName,"Server",Message.CHAT);                    
+                    aName=this.extractTag(attrName,'<','>');
+                    attrName=aName; //Negates any risk of loosing the last readLine()
                     attrData=br.readLine();
                     if (attrData.equals("---")) {
                         my_blazes=TrailBlazes.INQUIRE;
-                        myUser.askQuestion(attrName.substring(1,attrName.length()-1),"Please enter a value for " + attrName.substring(1,attrName.length()-1),false,null);
+                        myUser.askQuestion(attrName,"Please enter a value for " + attrName.substring(1,attrName.length()-1),false,null);
                         return;
                     } else {
-                         boolean numeric=true;
-                         //myUser.send_message("We are creating the list of multiple options: " + attrData,"Server",Message.CHAT);
-                         List<String> Options=new ArrayList<String>();                           
-                         while (attrData.equals("---")==false) {
-                             count=0;
-                             /*
-                             for (int i = 0; i < attrData.length(); i++) {
-                                if (attrData.charAt(i) == '&') count++; //Why didn't \" WORK ?!
-                             }
-                             if (count != 2) throw new IOException("Bad Parsing inside of an attribute statement");
-                             attrData=attrData.substring(1,attrData.length()-1);
-                             */
-                             attrData=this.extractTag(attrData,'&','&');
-                            /*
-                             try {
-                                int result;
-                                result = Integer.parseInt(attrData);
-                             } catch (NumberFormatException nfe) {
-                                numeric=false;
-                             }
-                             Options.add(attrData);
-                             */
-                             Attribute createOption = this.dataToAttribute("noname",attrData);
-                             Options.add(createOption.getData());
-                             if (attrData==null) myUser.send_message("Null result error.","Server",Message.CHAT);
-                             attrData=br.readLine();
-                         }
-                         if (numeric==false) myUser.askQuestion(attrName.substring(1,attrName.length()-1),"Please enter an answer for " + attrName.substring(1,attrName.length()-1),false,Options);
-                         else myUser.askQuestion(attrName.substring(1,attrName.length()-1),"Please enter an answer for " + attrName.substring(1,attrName.length()-1),true,Options);
-                        
-                         my_blazes=TrailBlazes.INQUIRE;
-                         return;
+                        List<String> Options=new ArrayList<String>();
+                        while (attrData.equals("---")==false) {
+                            Attribute createOption = this.dataToAttribute("noname",this.extractTag(attrData,'&','&'));
+                            Options.add(createOption.getData());
+                            if (attrData==null) myUser.send_message("Null result error.","Server",Message.CHAT);
+                            attrData=br.readLine();
+                        }
+                        myUser.askQuestion(attrName,"Please enter an answer for " + attrName.substring(1,attrName.length()-1),true,Options);
+
+                        my_blazes=TrailBlazes.INQUIRE;
+                        return;
                     }
+                } catch (Exception e) { //For security reasons it might be wise to check WHICH error we have - we just assign the variable
+                    attrData=br.readLine();
+                    Attribute createAttr;
+                    //myUser.send_message(" No tags foundattrName: " + attrName + " attrData: " + attrData,"Server",Message.CHAT);
+                    createAttr=this.dataToAttribute(attrName,attrData);
+                    myUser.setAttribute(createAttr);
+                    String Choice=br.readLine();
+                    if (Choice.equals("---")) {
+                        my_blazes=TrailBlazes.CONTINUE;
+                        return;
+                    } else throw new IOException();
                 }
             }
-        }catch(Exception e){ //If this happens, we may have a simple end of file.
-                        
-            my_blazes=TrailBlazes.INVALID;
-            
-            myUser.send_message("Unkown Exception has occured "+ e.toString(),"Server",Message.CHAT);
-            
-            return;
+
+            if (command.equals("CHATNAME")) {
+                st=this.br.readLine();
+                if (this.br.readLine().equals("---")) {
+                    String Result=this.parseBracket(st);
+                    myUser.setChatName(Result);
+                    my_blazes=TrailBlazes.CONTINUE;
+                    return;
+                }else {throw new IOException("CHATNAME block contains invalid information or is malformed");}
             }
+
+            if (command.equals("SIMPLEMATH")){
+                String next=br.readLine();
+                String anAttribute;
+                anAttribute=br.readLine();
+                try {anAttribute=this.extractTag(anAttribute,'<','>');}catch (Exception e){throw new Exception("Bad reference to attribute for calulation result");}
+                    next=this.extractTag(next,'*','*');
+                    Attribute result;
+                    Attribute first=this.dataToAttribute("first",this.parseBracket(br.readLine()));
+                    Attribute second=this.dataToAttribute("second",this.parseBracket(br.readLine()));
+                    if (!first.getType().equals("Numeric") || !second.getType().equals("Numeric")) throw new Exception("Math entry is not a number"); //Should I be using and/or
+                    if (next.equals("ADD")){
+                        result=this.dataToAttribute(anAttribute,Integer.toString(first.getintData()+second.getintData()));
+                     }else if (next.equals("SUBTRACT")){
+                        result=this.dataToAttribute(anAttribute,Integer.toString(first.getintData()-second.getintData()));
+                     }else if (next.equals("MULTIPLY")){
+                        result=this.dataToAttribute(anAttribute,Integer.toString(first.getintData()*second.getintData()));
+                     }else if (next.equals("DIVIDE")){
+                        result=this.dataToAttribute(anAttribute,Integer.toString(first.getintData()/second.getintData()));
+                    }else throw new Exception("Unsupported mathematics");
+                    
+                    if (br.readLine().equals("---")){
+                        myUser.setAttribute(result);
+                        return;
+                    }else throw new Exception("malformed SIMPLEMATH statement");
+                
+            }
+
+            
+        } catch(Exception e) { //If this happens, we may have a simple end of file.
+
+            my_blazes=TrailBlazes.INVALID;
+
+            myUser.send_message("Unkown Exception has occured "+ e.toString(),"Server",Message.CHAT);
+
+            return;
+        }
     }
 
 
-    
+
 }

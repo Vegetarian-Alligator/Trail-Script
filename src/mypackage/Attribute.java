@@ -1,12 +1,13 @@
 package mypackage;
 
 public class Attribute {
-    private String myType; //Not Used
+    private String myType;
     private String myName;
     public String myData;
     float myfloatData;
     public int myintData;
-        
+    boolean isNumeric;    //Not Used
+
     Attribute(String Type,String Name, String Data, float floatdata, int intData) {
         this.setAttributes(Type, Name, Data, floatdata, intData);
     }
@@ -24,7 +25,15 @@ public class Attribute {
         //return Integer.toString(myintData);
     }
 
+    public String getType() {
+        return this.myType;
+    }
+
     public String getData () {
-       return this.myData;
+         return this.myData;
+    }
+
+    public int getintData() {
+        return this.myintData;
     }
 }

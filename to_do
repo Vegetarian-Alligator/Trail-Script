@@ -7,9 +7,9 @@ NEXT TASKS:
     
     *ADDED: Compartamentalize ALL bracket parsing functions
     
-    *Implement Chat-Name
+    *Implement Chat-Name - COMPLETE
     *Double check numerical data intake
-    *Fix Attribute Data Return
+    *Fix Attribute Data Return - COMPLETE
     *Implement Simple_math (add, subtract, divide)
     *Implement CONDITIONALS with pages
     *Thread Safety!

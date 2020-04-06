@@ -12,31 +12,56 @@ Hi!  What is your name?
 ---
 ---
 *PRINT*
-Welcome to the server, [name]!
+Welcome to the server, [name]!  Also, your name is [name]
 ---
 ---
 *PRINT*
-Testing attribute resets.  Please enter a new name
+Are you an elf, a man, a dwarf, or an orc?
 ---
 ---
 *GET_ATTRIBUTE*
-<name>
+<species>
+&dwarf&
+&elf&
+&orc&
+&man&
 ---
 ---
 *PRINT*
-Your  name is [name] now!
+[name], you are a [species].
+---
+---
+*CHATNAME*
+[name] ([species])
+---
+---
+*SIMPLEMATH*
+*SUBTRACT*
+<result>
+5
+10
 ---
 ---
 *PRINT*
-Are you a boy or a girl?
+5-10=[result]
 ---
 ---
 *GET_ATTRIBUTE*
-<gender>
-&boy&
-&girl&
+hitpoints
+5
+---
+---
+*SIMPLEMATH*
+*MULTIPLY*
+<double>
+[hitpoints]
+2
 ---
 ---
 *PRINT*
-You are a [gender]!
+Double your hitpoints is: [double]
+---
+---
+*SOCIAL*
+CHAT
 ---
