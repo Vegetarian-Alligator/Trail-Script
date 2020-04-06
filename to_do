@@ -2,8 +2,11 @@ NEXT TASKS:
     Ensure the demarkating is being denduded before names are submitted for attributes - COMPLETE
     Fill Null Pointer Error - COMPLETE
 
-    *implement setting attributes that already exist
-    *Compartamentalize parsing a la *print* so other functions can use it (ie, make the print subroutine a function)
+    *implement setting attributes that already exist - COMPLETE
+    *Compartamentalize parsing a la *print* so other functions can use it (ie, make the print subroutine a function) - COMPLETE
+    
+    *ADDED: Compartamentalize ALL bracket parsing functions
+    
     *Implement Chat-Name
     *Double check numerical data intake
     *Fix Attribute Data Return

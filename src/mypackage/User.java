@@ -7,10 +7,9 @@ public class User { // implements Runnable {
     private String name=null;
     private Session session; //Doubt we need the static keyword, I will doublecheck
     public boolean in_public_chat;
-    private boolean ask; //Male: false.  Female: true
+    private boolean ask;
     String Waiting;
     private TrailBlazer myTrail;
-    public boolean gender_set=false;
     List<Attribute> myAttributes=new ArrayList<Attribute>();
     List<String> attrChoice;
     
@@ -19,7 +18,6 @@ public class User { // implements Runnable {
             this.name=name;
             ask=false;
             Waiting=null;
-            this.gender_set=false;
             this.session=my_session;
             this.in_public_chat=true;
             String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
@@ -105,7 +103,25 @@ public class User { // implements Runnable {
             myAttributes.add(new Attribute(Type, Name, Data, floatdata, intData));
             //this.send_message("Adding new Attribute: *" + Name+"*","Server",Message.CHAT);
           } else {
+            manipular.setAttributes(Type, Name, Data, floatdata, intData);
+          }
+    }
 
+    public void setAttribute(Attribute newAttribute) { //For thread safety: this MUST be in a synchronized statement!
+          Attribute manipular;
+          manipular=null; //Since it may not be set in the case of an exception
+          try {
+            manipular=returnAttribute(newAttribute.getName());
+            }catch(Exception e){
+                manipular=null;
+            }
+                
+                //manipular=null;
+          if (manipular==null) {
+            myAttributes.add(newAttribute);
+          } else {
+            myAttributes.remove(manipular);
+            myAttributes.add(newAttribute);
           }
     }
 

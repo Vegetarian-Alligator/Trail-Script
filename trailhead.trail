@@ -15,6 +15,28 @@ Hi!  What is your name?
 Welcome to the server, [name]!
 ---
 ---
-*CHAT_MESSAGE*
-[name]: 
+*PRINT*
+Testing attribute resets.  Please enter a new name
+---
+---
+*GET_ATTRIBUTE*
+<name>
+---
+---
+*PRINT*
+Your  name is [name] now!
+---
+---
+*PRINT*
+Are you a boy or a girl?
+---
+---
+*GET_ATTRIBUTE*
+<gender>
+&boy&
+&girl&
+---
+---
+*PRINT*
+You are a [gender]!
 ---

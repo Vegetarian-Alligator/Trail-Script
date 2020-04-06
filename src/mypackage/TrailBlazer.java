@@ -14,6 +14,19 @@ CONTINUE: Ready to advance to the next object
 INQUIRE: I don't have 
 
 */
+/*
+final class dataReturn
+{
+   public String myData;
+   public int    myInt;
+   public float  myFloat;
+   public boolean stringData; 
+   public dataReturn(String myData, int, myInt, float myFloat,boolean stringData){
+        this.myD
+   }
+}
+*/
+
 public class TrailBlazer {
 protected TrailBlazes my_blazes; //The status of this trail
 protected String Command;
@@ -49,6 +62,58 @@ User myUser;
         return null;
     }
 
+    private String parseBracket(String parseObject) throws Exception { //Can only be called from readNextCommand, therefore throwing is acceptable
+        /*I really can't believe this worked the first time I built it - see file "cool"*/        
+
+        String Result="";
+        String Name;//=""; //Initilization Unneeded
+        int look=0;// = parseObject.indexOf('[');
+        if (parseObject.indexOf('[') != -1) 
+            do {
+                try {                
+                try{Result+=parseObject.substring(look,parseObject.indexOf('['));} catch (Exception e){break;} //Because the solution will be behind the start, exception is thrown              
+                Name = parseObject.substring(parseObject.indexOf('[',look)+1,parseObject.indexOf(']',look));
+                } //"Consuming" the string might be faster, somehow?
+                catch (Exception e){
+                    throw new IOException(e.toString()+"This occured inside of ParseBracket"); //But what happens if only ONE of these is -1?  In that case, I guess it gets ignored
+                    //break; //Ignores certain cases of mismatched tags
+                }
+                Attribute userAttribute = myUser.returnAttribute(Name);
+                if (userAttribute==null) Result+="Attribute not found";
+                else {
+                    Result+=userAttribute.getData();
+                }
+                look=parseObject.indexOf(']',look)+1; //Plus one to keep from finding the same one over and over/
+            }while (look!=0);
+        
+            
+//            Result+=parseObject.substring(parseObject.length()-parseObject.,parseObject.length());
+              Result+=parseObject.substring(look,parseObject.length());
+              return Result;   
+        }
+
+    private String extractTag(String parseObject, char startTag, char endTag) throws Exception{         
+        //findCommand=Pattern.compile("\\*+?(.+)\\*+");       
+        int i=0;
+        if (parseObject.charAt(i)!=startTag) throw new IOException("Something not a tag was treated as a tag");
+        for (i=1;i<parseObject.length();i++) {
+            if (parseObject.charAt(i)==startTag) if (i < (parseObject.length()-1) && startTag != endTag) throw new IOException("Extranous tag: " + startTag);
+            if (parseObject.charAt(i)==endTag) if (i < (parseObject.length()-1)) throw new IOException("Extranous tag: " + endTag);
+        }
+        return parseObject.substring(1,parseObject.length()-1);
+    }
+
+    private Attribute dataToAttribute(String attrName, String parseObject) {
+        int result;        
+        try {
+             //myUser.send_message("Trying to parse that int on + " + attrData,"Server",Message.CHAT);
+             result = Integer.parseInt(parseObject);
+             return new Attribute("Number",attrName.substring(0,attrName.length()),null,result,result); //Type conversions
+        } catch (NumberFormatException nfe) {
+             return new Attribute("Text",attrName.substring(0,attrName.length()),parseObject,0,0);
+        }
+    }
+
     public void readNextCommand() {
             String st;
             try {
@@ -61,7 +126,6 @@ User myUser;
 
             
             try { 
-            //if (st.equals("---")==false){ //Malformed
             if (st==null) {
                 //myUser.send_message("End of file","Server",Message.CHAT);
                 my_blazes=TrailBlazes.INVALID;
@@ -69,63 +133,25 @@ User myUser;
             }
     
              if (st.equals("---")==false) {
-                myUser.send_message("malformed","Server",Message.CHAT);
+                myUser.send_message("malformed Result was: ","Server: "+st,Message.CHAT);
                 my_blazes=TrailBlazes.INVALID;
                 return;
             }
                        
-                //Errors: More than one * will screw up the Syntax!  It should be any number!
-                st=this.br.readLine();
-                //buffer=sc.nextLine().replaceAll("(?<=\\*)(.*?)(?=\\*)","this was the command");
 
-                //This SHOULD be the next command at this point.
-                Pattern findCommand;
-                findCommand=Pattern.compile("\\*+?(.+)\\*+");
-                Matcher extractCommand = findCommand.matcher(st);
-                if (extractCommand.matches()==false) {my_blazes=TrailBlazes.INVALID;return;}            
-                String command = extractCommand.group(1);
-                /* Start of the PRINT command block */                
-                /*I really can't believe this worked the first time I built it.*/
+            st=this.br.readLine(); 
+
+
+                String command = this.extractTag(st, '*','*');
+
                 if (command.equals("PRINT")) { //The User 
                     //myUser.send_message("Entering the print subroutine","Server",Message.CHAT);
                     st=this.br.readLine();
                     if (this.br.readLine().equals("---")) { //Send the message
-                        int count=-1;
-                        int closecount=-1;
-                        boolean open=false; 
-                        int copyHead=0;
-                        String Result="";                       
-                        for (int i = 0; i < st.length(); i++) {
-                            if (st.charAt(i) == '[') {
-                                if (open) throw new IOException("Bracket read error.");
-                                count=i;
-                                open=true;
-                            }
-                            if (st.charAt(i) == ']') {
-                                
-                                if (open == false) throw new IOException("Bracket read error.");                                
-                                open=false; //Why didn't \" WORK ?!
-                                //if (closecount==-1)closecount++;                                
-                                Result+=st.substring(copyHead,count);
-                                //Result+="INSERT DATA RETREIVAL HERE";
-                                //myUser.send_message("Retrieving Attributes: *"+st.substring(count+1,i)+"*","Server",Message.CHAT);
-                                Attribute userAttribute;
-                                userAttribute = myUser.returnAttribute(st.substring(count+1,i));
-                                if (userAttribute==null) Result+="Attribute not found";
-                                else {
-                                    Result+=userAttribute.getData();
-                                }
-                                copyHead=i+1;
-                                closecount=i;
-                            }
-                        }
-                        if (open) if (closecount==-1) throw new IOException("Bracket read error - brackets opened but not closed");                        
-                        //if (count==-1) {
-                            //myUser.send_message(st,"Server",Message.CHAT);
-                            if (copyHead!=st.length()) Result+=st.substring(copyHead,st.length());
-                            myUser.send_message(Result,"Server",Message.CHAT); //This line of code Actually send the message!
-                            my_blazes=TrailBlazes.CONTINUE;
-                            return;
+                        String Result=this.parseBracket(st);                        
+                        myUser.send_message(Result,"Server",Message.CHAT); //This line of code Actually send the message!
+                        my_blazes=TrailBlazes.CONTINUE;
+                        return;
                         }
                    }
                         
@@ -163,13 +189,18 @@ User myUser;
                         attrData=br.readLine(); 
                         //myUser.send_message("attrData: " + attrData,"Server",Message.CHAT);
                         int result;                        
-                        try {
+                    /*
+                    try {
                         //myUser.send_message("Trying to parse that int on + " + attrData,"Server",Message.CHAT);
                             result = Integer.parseInt(attrData);
                             myUser.setAttribute("Number",attrName.substring(0,attrName.length()),null,result,result); //Type conversions
                         } catch (NumberFormatException nfe) {
                             myUser.setAttribute("Text",attrName.substring(0,attrName.length()),attrData,0,0);
                         }
+                     */
+                        Attribute createAttr;
+                        createAttr=this.dataToAttribute(attrName,attrData);
+                        myUser.setAttribute(createAttr);
                         String Choice=br.readLine();
                         if (Choice.equals("---")){
                             my_blazes=TrailBlazes.CONTINUE;
@@ -190,11 +221,15 @@ User myUser;
                          List<String> Options=new ArrayList<String>();                           
                          while (attrData.equals("---")==false) {
                              count=0;
+                             /*
                              for (int i = 0; i < attrData.length(); i++) {
                                 if (attrData.charAt(i) == '&') count++; //Why didn't \" WORK ?!
                              }
                              if (count != 2) throw new IOException("Bad Parsing inside of an attribute statement");
                              attrData=attrData.substring(1,attrData.length()-1);
+                             */
+                             attrData=this.extractTag(attrData,'&','&');
+                            /*
                              try {
                                 int result;
                                 result = Integer.parseInt(attrData);
@@ -202,6 +237,9 @@ User myUser;
                                 numeric=false;
                              }
                              Options.add(attrData);
+                             */
+                             Attribute createOption = this.dataToAttribute("noname",attrData);
+                             Options.add(createOption.getData());
                              if (attrData==null) myUser.send_message("Null result error.","Server",Message.CHAT);
                              attrData=br.readLine();
                          }
