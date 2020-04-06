@@ -1,0 +1,20 @@
+---
+*SOCIAL*
+SOLO
+---
+---
+*PRINT*
+Hi!  What is your name?
+---
+---
+*GET_ATTRIBUTE*
+<name>
+---
+---
+*PRINT*
+Welcome to the server, [name]!
+---
+---
+*CHAT_MESSAGE*
+[name]: 
+---

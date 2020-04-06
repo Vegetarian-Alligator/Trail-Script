@@ -1,0 +1,23 @@
+NEXT TASKS:
+    Ensure the demarkating is being denduded before names are submitted for attributes - COMPLETE
+    Fill Null Pointer Error - COMPLETE
+
+    *implement setting attributes that already exist
+    *Compartamentalize parsing a la *print* so other functions can use it (ie, make the print subroutine a function)
+    *Implement Chat-Name
+    *Double check numerical data intake
+    *Fix Attribute Data Return
+    *Implement Simple_math (add, subtract, divide)
+    *Implement CONDITIONALS with pages
+    *Thread Safety!
+
+
+
+
+
+
+
+    Long Term:
+    Implement more sophisticated mathematicall parsing, like what we do with the print function
+    
+    
