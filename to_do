@@ -1,18 +1,11 @@
 NEXT TASKS:
-    Ensure the demarkating is being denduded before names are submitted for attributes - COMPLETE
-    Fill Null Pointer Error - COMPLETE
+*Implement CONDITIONALS with pages.
+*Implement modifier for UNIQUE* for (get_attribute) (for example names would have to be unique, the game could then enforce this.)
+    *This will involve implementing the "forest"
 
-    *implement setting attributes that already exist - COMPLETE
-    *Compartamentalize parsing a la *print* so other functions can use it (ie, make the print subroutine a function) - COMPLETE
-    
-    *ADDED: Compartamentalize ALL bracket parsing functions
-    
-    *Implement Chat-Name - COMPLETE
-    *Double check numerical data intake
-    *Fix Attribute Data Return - COMPLETE
-    *Implement Simple_math (add, subtract, divide)
-    *Implement CONDITIONALS with pages
-    *Thread Safety!
+
+(Should returns be automatic?)
+*Thread Safety!
 
 
 
@@ -20,7 +13,6 @@ NEXT TASKS:
 
 
 
-    Long Term:
-    Implement more sophisticated mathematicall parsing, like what we do with the print function
-    
-    
+Long Term:
+Implement more sophisticated mathematicall parsing, like what we do with the print function
+*ADDED: Compartamentalize ALL bracket parsing functions

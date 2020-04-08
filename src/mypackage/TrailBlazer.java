@@ -10,6 +10,7 @@ import java.util.*;
 public class TrailBlazer {
     protected TrailBlazes my_blazes; //The status of this trail
     protected String Command;
+    private String filePath;
     private BufferedReader br;
     User myUser;
     TrailBlazer (String startPath, User calling_user) {
@@ -18,7 +19,9 @@ public class TrailBlazer {
 
 
         try {
-            this.br = new BufferedReader(new FileReader(startPath+"trailhead.trail"));
+            //this.br = new BufferedReader(new FileReader(startPath+"trailhead.trail"));
+              this.br = this.setReader(startPath,"trailhead.trail");
+              this.filePath=startPath;
             my_blazes=TrailBlazes.CONTINUE;
             this.Parse();
 
@@ -28,6 +31,10 @@ public class TrailBlazer {
         //while ((st = br.readLine()) != null)
 
 
+    }
+    
+    private BufferedReader setReader(String startPath, String startFile) throws IOException {
+        return new BufferedReader(new FileReader(startPath+startFile)); // Returns instead of sets br in case we ever implement "return" branches
     }
 
     public void Parse() {
@@ -232,6 +239,43 @@ public class TrailBlazer {
                 
             }
 
+            /*
+            ---
+                *IF*
+                [hitpoints]
+                (Will require mathematical operators) *<* *>* = <= =>
+                (Will requre string operators) *isEqual* *isLonger*
+                5 or [value]
+                File For TRUE CONDITION
+                File for FALSE CONIDTION
+                ---
+            */
+
+            if (command.equals("IF")){
+                String firstCondition=this.parseBracket(br.readLine());
+                String operator;
+                try {operator=this.extractTag(br.readLine(),'*','*');} catch (Exception e){ throw new Exception("Problem in IF statement");}
+                String secondCondition=this.parseBracket(br.readLine());
+                Attribute first = this.dataToAttribute("First",firstCondition);
+                Attribute second = this.dataToAttribute("Second",secondCondition);
+                String trueResult=br.readLine();
+                String falseResult=br.readLine();
+                if (operator.equals("=")) {
+                    String firstParameter;
+                    String secondParameter;
+                    if (first.getType().equals("Text")) firstParameter=first.getData();else firstParameter=Integer.toString(first.getintData());              
+                    if (second.getType().equals("Text")) secondParameter=second.getData();else secondParameter=Integer.toString(second.getintData());
+                    if (firstParameter.equals(secondParameter)) {
+                        try {br=setReader(filePath, trueResult);} 
+                        catch (Exception e) {throw new IOException("Problem in if block " + e.toString());}
+                    } else {
+                        try {br=setReader(filePath, falseResult);} 
+                        catch (Exception e) {throw new IOException("Problem in if block " + e.toString());}
+                    }
+                    my_blazes=TrailBlazes.CONTINUE;
+                    return; //We do not have to read the last --- until we implement true returning branches
+                }
+            }
             
         } catch(Exception e) { //If this happens, we may have a simple end of file.
 
