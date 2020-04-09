@@ -1,0 +1,35 @@
+---
+*PRINT*
+Select the first two numbers that you would like to add:
+---
+---
+*GET_ATTRIBUTE*
+<first>
+---
+---
+*PRINT*
+Select the second
+---
+---
+*GET_ATTRIBUTE*
+<second>
+---
+---
+*PRINT*
+[first] + [second]
+---
+---
+*SIMPLEMATH*
+*MULTIPLY*
+<result>
+[first]
+[second]
+---
+---
+*PRINT*
+[first] + [second] = [result]
+---
+---
+*GOTO*
+addition.trail
+---

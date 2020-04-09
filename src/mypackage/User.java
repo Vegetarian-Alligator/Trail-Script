@@ -49,8 +49,10 @@ public class User { // implements Runnable {
             if (attrChoice==null) {
                 try {
                     this.setAttribute("Numeric",Waiting,null,Integer.parseInt(message),0);
+                    //this.send_message(" Numeric message sent: "+Waiting,"Server",Message.CHAT);
                 } catch (Exception e) {
                     this.setAttribute("Text",Waiting,message,0,0);
+                    //this.send_message(" Text message sent " + Waiting,"Server",Message.CHAT);
                 }
                 Waiting=null;
                 ask=false;
@@ -65,11 +67,13 @@ public class User { // implements Runnable {
                 if (key.equals(message)) {
                     try {
                         this.setAttribute("Numeric",Waiting,null,Integer.parseInt(message),0);
+
                     } catch (Exception e) {
                         this.setAttribute("Text",Waiting,message,0,0);
                     }
                     Waiting=null;
                     ask=false;
+                    attrChoice=null;
                     //this.send_message("Thank you for setting the attribute","Server",Message.CHAT);
                     myTrail.my_blazes=TrailBlazes.CONTINUE;
                     return false;
@@ -107,7 +111,7 @@ public class User { // implements Runnable {
         return null;
     }
 //                            myUser.setAttribute("Text",attrName,attrData,0,0);
-    public void setAttribute(String Type, String Name, String Data, float floatdata, int intData) {
+    public void setAttribute(String Type, String Name, String Data, int intData, float floatdata) {
         Attribute manipular;
         manipular=null; //Since it may not be set in the case of an exception
         try {

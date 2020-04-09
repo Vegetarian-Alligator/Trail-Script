@@ -236,7 +236,6 @@ public class TrailBlazer {
                         myUser.setAttribute(result);
                         return;
                     }else throw new Exception("malformed SIMPLEMATH statement");
-                
             }
 
             /*
@@ -276,6 +275,12 @@ public class TrailBlazer {
                     return; //We do not have to read the last --- until we implement true returning branches
                 }
             }
+            
+           if (command.equals("GOTO")){
+            br=setReader(filePath, this.parseBracket(br.readLine())); //Look at that - no error checking whatsoever.
+            my_blazes=TrailBlazes.CONTINUE;
+            return;
+           }
             
         } catch(Exception e) { //If this happens, we may have a simple end of file.
 
