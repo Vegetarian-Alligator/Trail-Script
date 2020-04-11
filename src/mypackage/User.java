@@ -13,9 +13,11 @@ public class User { // implements Runnable {
     List<Attribute> myAttributes=new ArrayList<Attribute>();
     List<String> attrChoice;
     private String chatName;
+    boolean AI=false;
 
     User(String name, Session my_session)
     {
+        this.AI=false;
         this.name=name;
         this.chatName=name;
         ask=false;
@@ -41,18 +43,18 @@ public class User { // implements Runnable {
     }
 
     public boolean input(String Type, String message) {
-        if (Type.equals("CHAT")) if (ask==false)
+        if (Type.equals("CHAT"))
             {
                 return true;
             }
-        if (ask) {
+        if (ask) { //Type should equal "COMMAND" at this point; this "ask" statement must be removed in order for unprompted commands to happen
             if (attrChoice==null) {
                 try {
                     this.setAttribute("Numeric",Waiting,null,Integer.parseInt(message),0);
-                    //this.send_message(" Numeric message sent: "+Waiting,"Server",Message.CHAT);
+                    //this.send_message(" Numeric message sent: "+Waiting+":"+message,"Server",Message.CHAT);
                 } catch (Exception e) {
                     this.setAttribute("Text",Waiting,message,0,0);
-                    //this.send_message(" Text message sent " + Waiting,"Server",Message.CHAT);
+                    //this.send_message(" Text message sent " + Waiting+":"+message,"Server",Message.CHAT);
                 }
                 Waiting=null;
                 ask=false;
@@ -84,20 +86,25 @@ public class User { // implements Runnable {
         }
         return true;
     }
+
     public boolean askQuestion(String attrName,String Question,boolean isNumeric,List<String> Options) {
-        ask=true;
-        Waiting=attrName;
-        if (Options==null) {
-//            this.send_message(Question,"Server",Message.CHAT);
+        if (!AI) {
+            //this.send_message("We are in the ask question subroutine","Server",Message.CHAT);
+            ask=true;
+            Waiting=attrName;
+            if (Options==null) {
+                this.send_message(Question,"Server",Message.COMMAND);
+                return ask;
+            }
+            //If we reach this point in the code, we have several options to choose from.
+            //For the poruporses of this initial test, we do not enumerate options to the user.  This
+            //Should really be done with a "Print" Command, and collection of the data should be silent
+
+            this.attrChoice=Options;
+            this.send_message(Question,"Server",Message.COMMAND);
             return ask;
         }
-        //If we reach this point in the code, we have several options to choose from.
-        //For the poruporses of this initial test, we do not enumerate options to the user.  This
-        //Should really be done with a "Print" Command, and collection of the data should be silent
-
-        this.attrChoice=Options;
-        //this.send_message(Question,"Server",Message.CHAT);
-        return ask;
+        return false;
     }
 
     public boolean get_public_chat() {
@@ -147,7 +154,6 @@ public class User { // implements Runnable {
         }
     }
 
-
     public void send_message(String message, String sender, Message type) { //boolean public_message
 
         try {
@@ -157,18 +163,30 @@ public class User { // implements Runnable {
 
             if (type==Message.CHAT) {
                 String Dispatch=new String();
-                //SerializeJSON.Serialize("chat",sender +": " + message);
+                SerializeJSON.Serialize("chat",sender +": " + message);
                 this.session.getBasicRemote().sendText(SerializeJSON.Serialize("chat",sender +": " + message));
                 return;
-
             }
-        } catch (IOException e) {
 
+            if (type==Message.COMMAND) {
+                //Question, "Server", Message.COMMAND
+                if (this.attrChoice==null) this.session.getBasicRemote().sendText(SerializeJSON.Serialize("command",sender + ": " + message));
+                else {
+                    //this.send_message("We are starting to Serialize the JSON now... Item Count: +" + this.attrChoice.size(),"Server",Message.CHAT);                    
+                    //String result=SerializeJSON.Serialize("commandlist",this.attrChoice);
+                    //if (result==null)  this.send_message("Result was null!","Server commandlist: ",Message.CHAT); else this.send_message(result,"Server commandlist: ",Message.CHAT);
+                    //System.out.println("Serialization Result: " + result);                  
+                    //this.send_message("Should have sent the command list as a chat string","Server",Message.CHAT);                    
+                    this.session.getBasicRemote().sendText(SerializeJSON.Serialize("commandlist",this.attrChoice));
+                }
+                return;
+            }
+        } catch (Exception e) {
+            try{this.send_message("EXCEPTION in send_message: " + e.toString(),"Server",Message.CHAT);}catch (Exception ee) {}
         }
     }
 
     public String get_name() {
         return this.name;
     }
-
 }

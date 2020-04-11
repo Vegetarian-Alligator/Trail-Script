@@ -1,11 +1,13 @@
 NEXT TASKS:
 *Implement CONDITIONALS with pages.
 *Implement modifier for UNIQUE* for (get_attribute) (for example names would have to be unique, the game could then enforce this.)
-    *This will involve implementing the "forest"
-
-
+*This will involve implementing the "forest"
 (Should returns be automatic?)
+*Implement Floating Point Calculations
 *Thread Safety!
+*Implement Difference between the chat and the commands.
+*Implement pictures in graphical mode
+*Implement Turn Systems
 
 
 

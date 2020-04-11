@@ -2,5 +2,6 @@ package mypackage;
 
 public enum Message{
     RAW,
-    CHAT
+    CHAT,
+    COMMAND
 }

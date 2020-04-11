@@ -48,7 +48,7 @@ Are you an elf, a man, a dwarf, or an orc?
 ---
 *GET_ATTRIBUTE*
 hitpoints
-5
+9
 ---
 ---
 *SIMPLEMATH*
@@ -64,4 +64,12 @@ Double your hitpoints is: [double]
 ---
 *SOCIAL*
 CHAT
+---
+---
+*IF*
+[hitpoints]
+*=*
+5
+truetest.trail
+falsetest.trail
 ---

@@ -33,12 +33,10 @@ public class WsServer extends HttpServlet{
     @OnOpen
     public void onOpen(Session session) throws IOException{
         System.out.println("Open Connection ..." + session.getId());
-        //session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","Welcome to the server, please enter your name"));
-//        session.getBasicRemote().sendText("Please enter your name!");
-        //user_list.add(session.getId());
-        //TO-DO: Make sure the user is not already in the session, to prevent impersonation of other uses based on good guesses
-//        User new_user = new User(
-//        sessions.put(session.getId(),session);
+        session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","Welcome to the server"));
+        User a_user=new User("human",session);
+        synchronized (Users) { Users.put(session.getId(), a_user);}        
+        return;
     }
      
     @OnClose
@@ -55,21 +53,15 @@ public class WsServer extends HttpServlet{
         message=SanatizeHTML.SanatizedHTML(Input.get(1)); // was message
 //        message.replaceAll("[<].*[>]","tag"); //Very basic way to sanitize html - delete anything between <->.  Merciless.
         //System.out.println("Message from the client, deSerialized: " + Input.get(1)); // was message
-        User this_user = Users.get(session.getId());
-
-        if (this_user==null) {
-            session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","Welcome to the server"));
-            //User a_user=new User(Input.get(1), session);// was message
-            User a_user=new User("human",session);
-            Users.put(session.getId(), a_user);
-            return;
+        User this_user;
+        synchronized (Users) {
+            this_user = Users.get(session.getId());         
+                
+            if (this_user.input(Input.get(0),Input.get(1)))
+                for (String key : Users.keySet()) { 
+                    Users.get(key).send_message(Input.get(1),this_user.getChatName(),Message.CHAT); //Was message
+                }
         }
-           
-            
-        if (this_user.input(Input.get(0),Input.get(1)))
-            for (String key : Users.keySet()) { 
-                Users.get(key).send_message(Input.get(1),this_user.getChatName(),Message.CHAT); //Was message
-            } 
         this_user.Refresh();
 
         return;

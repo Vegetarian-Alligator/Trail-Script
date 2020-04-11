@@ -1,6 +1,6 @@
 ---
 *PRINT*
-Select the first two numbers that you would like to add:
+Select the first two numbers that you would like to multiply:
 ---
 ---
 *GET_ATTRIBUTE*
@@ -20,7 +20,7 @@ Select the second
 ---
 ---
 *SIMPLEMATH*
-*MULTIPLY*
+*ADD*
 <result>
 [first]
 [second]

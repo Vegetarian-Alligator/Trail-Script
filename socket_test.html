@@ -2,20 +2,87 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Tomcat WebSocket</title>
+<title>Open Source Game</title>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  font-family: Arial;
+  color: white;
+}
+
+.split {
+  height: 100%;
+  width: 50%;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  overflow-x: hidden;
+  padding-top: 20px;
+}
+
+.left {
+  left: 0;
+  background-color: blue;
+}
+
+.lefttext {
+    left: 1;
+    background-color: gray;
+    position: relative;
+}
+
+.right {
+  right: 0;
+  background-color: lightblue;
+}
+
+.centered {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.centered img {
+  width: 150px;
+  border-radius: 50%;
+}
+</style>
 </head>
 <body>
-    <form>
-        <input id="message" type="text">
+</head>
+<body>
+
+<div class="split left">
+  <div class="centered">
+        <form>
+        <p id="echoText"></p>
         <input onclick="wsSendMessage();" value="Echo" type="button">
         <input onclick="wsCloseConnection();" value="Disconnect" type="button">
+        <<input id="message" type="text">
+        <!--<textarea id="echoText" rows="5" cols="30"></textarea>-->
     </form>
+    <h3>Chat Side</h3>
+    <p>This is for chat with other players</p>
+  </div>
+</div>
+
+<div class="split right">
+  <div class="centered">
+    <div id="echoCommands"></div>
+    
+    <h3>Command Side</h3>
+    <p>Here you may respond to game elements from the server.</p>
+  </div>
+
     <br>
-    <textarea id="echoText" rows="5" cols="30"></textarea>
+
     <script type="text/javascript">
         var webSocket = new WebSocket("ws://localhost:8080/myapp-0.1-dev/websocketendpoint");
         var echoText = document.getElementById("echoText");
-        echoText.value = "";
+        //echoText.value = "";
         var message = document.getElementById("message");
         webSocket.onopen = function(message){ wsOpen(message);};
         webSocket.onmessage = function(message){ wsGetMessage(message);};
@@ -31,18 +98,125 @@
             webSocket.send(bottle);
             message.value = "";
         }
+    
+        function wsSendCommand() {
+            var command = document.getElementById("command");
+            var bottle="{\"type\":\"COMMAND\", \"MESSAGE\":\"" + command.value + "\"}";
+            webSocket.send(bottle);
+            message.value = "";
+            var x = document.getElementById("echoCommands").querySelectorAll(".example");
+            for (index = 0; index < x.length; index++) { 
+                console.log("Disabling something: " + x);                
+                x[index].disabled=true;
+                x[index].setAttribute("class","retired");
+                x[index].setAttribute("id","retired");
+           }
+        }
         function wsCloseConnection(){
-            echoText.value += "Closing called for some reason ... \n";
+            //echoText.value += "Closing called for some reason ... \n";
+            //var paragraph = document.getElementById("p");
+            //var text = document.createTextNode("This just got added");
+            //paragraph.appendChild(text);
+            var text=document.createTextNode("Closing called for some reason");
+            //echoText.className="lefttext";
+            echoText.appendChild(text);
+            echoText.appendChild(document.createElement("br"));
             webSocket.close();
         }
         function wsGetMessage(message){
             //echoText.value += "RAW DATA: [[[" + message.data + "]]]\n";
 //            echoText.value += "((" +message.data + "))" + "\n";
-            //var extract=message.data;
+            /*var extract=message.data;
+            var textt=document.createTextNode("Raw Data:" + message.data);
+            echoText.appendChild(textt);
+            echoText.appendChild(document.createElement("br"));
+            textt=document.createTextNode("Stringify: " + JSON.stringify(message.data));
+            echoText.appendChild(textt);
+            echoText.appendChild(document.createElement("br"));*/
+            var value;
             obj=JSON.parse(message.data);
-            if (obj.type=="chat") echoText.value += obj.data + "\n";           
+            if (obj.type=="chat") {
+                value = obj.data;
+                var text=document.createTextNode(value);
+                echoText.appendChild(text);
+                echoText.appendChild(document.createElement("br"));
+            }
             
+            if (obj.type=="command") {
+                value = obj.data;
+                var text=document.createTextNode("Testing");
+                echoCommands.appendChild(text);
+                echoCommands.appendChild(document.createElement("br"));
+                var text=document.createTextNode(value);
+                echoCommands.appendChild(text);
+                var x = document.createElement("INPUT");
+                x.setAttribute("type", "text");
+                x.setAttribute("Id", "command");
+                x.setAttribute("class", "example");
+                echoCommands.appendChild(x);
+                x = document.createElement("INPUT");
+                x.setAttribute("Id","commandButton");
+                x.setAttribute("class","example");
+                x.setAttribute("type","button");
+                x.setAttribute("value","Send Answer");
+                x.setAttribute("onclick","wsSendCommand()");
+                //x.setAttribute("id", "commandButton");
+                echoCommands.appendChild(x);
+                echoCommands.appendChild(document.createElement("br"));
+            }
+
+            if (obj.type=="commandlist") {
+               // <input id="command" type="text"> <input onclick="wsSendCommand();" value = "Send Command" type="button">-->
+                value = obj.datalist;              
+                square = x => "append test " + x + " Also append test"; 
+                squares = value.map(square);
+                //console.log(squares);
+                console.log("results: " + squares);
+                //document.getElementById("demo").innerHTML = x;
+                var x;
+                var t;                
+                //  <input type="radio" id="male" name="gender" value="male">
+                for (index = 0; index < value.length; index++) {
+                    console.log("Making Buttons!");
+                    x=document.createElement("INPUT");
+                    x.setAttribute("type","radio");
+                    x.setAttribute("id",value[index]);
+                    x.setAttribute("name","current");
+                    x.setAttribute("value",value[index]);
+                    x.setAttribute("class","activebutton");
+                    echoCommands.appendChild(x);
+                    x=document.createElement("label");
+                    t=document.createTextNode(value[index]);
+                    x.setAttribute("for", value[index]);
+                    x.appendChild(t);
+                    echoCommands.appendChild(x);
+                }
+                console.log("Making command button!");
+                x=document.createElement("INPUT");
+                x.setAttribute("type","button");
+                x.setAttribute("value","Send Answer");
+                x.setAttribute("name","currentbutton");
+                x.setAttribute("class","activebutton");
+                x.setAttribute("onclick","wsSendRadioCommand()");
+                echoCommands.appendChild(x);
+            }
         }
+
+        function wsSendRadioCommand() {
+            //var gender = document.querySelector('input[name = "gender"]:checked').value;
+            //var bottle="{\"type\":\"COMMAND\", \"MESSAGE\":\"" + command.value + "\"}";
+            var result = document.querySelector('input[name = "current"]:checked');
+            if (result==null) return;
+            var bottle="{\"type\":\"COMMAND\", \"MESSAGE\":\"" + result.value + "\"}";
+            var x = document.getElementById("echoCommands").querySelectorAll(".activebutton");
+            for (index = 0; index < x.length; index++) { 
+                console.log("Disabling something: " + x);                
+                x[index].disabled=true;
+                x[index].setAttribute("class","retired");
+           }
+           webSocket.send(bottle); 
+        }        
+
         function wsClose(message){
             echoText.value += "Disconnect ... \n";
         }

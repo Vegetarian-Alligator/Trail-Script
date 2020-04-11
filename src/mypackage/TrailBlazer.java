@@ -183,7 +183,7 @@ public class TrailBlazer {
                             if (attrData==null) myUser.send_message("Null result error.","Server",Message.CHAT);
                             attrData=br.readLine();
                         }
-                        myUser.askQuestion(attrName,"Please enter an answer for " + attrName.substring(1,attrName.length()-1),true,Options);
+                        myUser.askQuestion(attrName,"Please enter an answer for " + attrName,true,Options);
 
                         my_blazes=TrailBlazes.INQUIRE;
                         return;
@@ -221,6 +221,7 @@ public class TrailBlazer {
                     Attribute result;
                     Attribute first=this.dataToAttribute("first",this.parseBracket(br.readLine()));
                     Attribute second=this.dataToAttribute("second",this.parseBracket(br.readLine()));
+                    
                     if (!first.getType().equals("Numeric") || !second.getType().equals("Numeric")) throw new Exception("Math entry is not a number"); //Should I be using and/or
                     if (next.equals("ADD")){
                         result=this.dataToAttribute(anAttribute,Integer.toString(first.getintData()+second.getintData()));
@@ -283,11 +284,8 @@ public class TrailBlazer {
            }
             
         } catch(Exception e) { //If this happens, we may have a simple end of file.
-
             my_blazes=TrailBlazes.INVALID;
-
             myUser.send_message("Unkown Exception has occured "+ e.toString(),"Server",Message.CHAT);
-
             return;
         }
     }

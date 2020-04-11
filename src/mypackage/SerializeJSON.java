@@ -10,6 +10,25 @@ public static String Serialize(String type, String data){
     return "{\"type\":\"" + type + "\",\"data\":\"" + data + "\"}";
 }
 
+public static String Serialize(String type, List<String> data) throws RuntimeException {
+//myObj = {
+//  "name":"John",
+//  "age":30,
+//  "cars":[ "Ford", "BMW", "Fiat" ]
+//};
+
+    String output;
+    output="{\"type\":\"" + type + "\",\"datalist\":[\"";
+    boolean first=true;
+    for (String key : data) {
+            if (first) output+=key+"\"";
+            else output+=", \"" + key + "\"";
+            first=false;
+    }
+    output+="]}";
+    return output;
+}
+
 public static List<String> deserializeCommand(String Command) {
         Pattern findCommand;
         findCommand=Pattern.compile("(?<=\").*?(?=\")");

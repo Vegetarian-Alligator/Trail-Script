@@ -303,6 +303,9 @@
         <fileset dir="${basedir}">
           <include name="index.html"/>
           <include name="trailhead.trail"/>
+          <include name="truetest.trail"/>
+          <include name="falsetest.trail"/>
+          <include name="addition.trail"/>
           <include name="socket_test.html" />
           <include name="images/*" />
           <include name="file_reference"/>
