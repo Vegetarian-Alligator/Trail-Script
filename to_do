@@ -1,20 +1,42 @@
 NEXT TASKS:
-*Implement CONDITIONALS with pages.
-*Implement modifier for UNIQUE* for (get_attribute) (for example names would have to be unique, the game could then enforce this.)
-*This will involve implementing the "forest"
-(Should returns be automatic?)
-*Implement Floating Point Calculations
-*Thread Safety!
-*Implement Difference between the chat and the commands.
-*Implement pictures in graphical mode
-*Implement Turn Systems
-
-
-
-
-
-
 
 Long Term:
-Implement more sophisticated mathematicall parsing, like what we do with the print function
-*ADDED: Compartamentalize ALL bracket parsing functions
+Implement more sophisticated mathematicall parsing, like what we do with the print function - COMPLETE
+*ADDED: Compartamentalize ALL bracket parsing functions - COMPLETE(ish)
+
+
+Next steps:
+*Return a "stringlist* from parseBracket
+*Implement modifier for UNIQUE* for (get_attribute) (for example names would have to be unique, the game could then enforce this.)
+*Implement Random Numbers
+*Implement pictures in web mode
+*Implement Verbs
+    *Must be Able to do specific actions to the "target" and the "actor"
+    *Each must be able to see the others attributes in order to make sure that they can 
+    -Verbs should have a "watch" option - for example, they activate when hitoints are zero, or when the players turn starts, ect.  
+*Implement the world in a "map" class.  Allow more than one map class, different types, ect.
+    -Probably implement watch verbs here, rather than when verbs are first implemented
+
+
+*Implement a *search* ... checks attributes of all entities or entities matching another certain attribute (for example, "human" or "elf")
+*Implement Turn Systems
+    -Each map should be running it's own turn system - maps are isolated from each other.
+    -Different world times should be allowed for example "turn based" or "real time"
+*Impelment an "Inventory" class
+    -Should have properties such as "remove"    
+    -Players can be in inventory (ie, hiding someone in a suitcase)
+    -Inventory should have it's own chat
+    -Players should be allowed to have multiple inventories" for example, on inventory is what the player is weilding, the other what they are carrying, ect.
+*Implement a "ncast" function (n=broad or narrow or ect)
+    -This allows inventory to "talk" (send messages) to players holding it (your pack vibrates)
+    -This allows players trapped/hidden somewhere to talk only to whever is carrying them
+    -Should allow maps to let all players see something "the map vibrates"
+*Implement Retreival of World Variables
+*Implement archetypes
+    -Archtypes can be changes for objects
+    -For example, a "statue" with no verbs might change into a statue "monster"
+    -Elf or Dwarf might be an archtype - commands that will be read as the character is assigned stuff
+*Impelent *return* if statemets*
+*Impelement Timers
+*Implement Floating Point Calculations
+*Implement some sort of *save* function

@@ -48,10 +48,11 @@ public class TrailBlazer {
     private String getAttribute() {
         return null;
     }
-
-    private String parseBracket(String parseObject) throws Exception { //Can only be called from readNextCommand, therefore throwing is acceptable
+    /*WARNING! This creates an unlikely, but possible, arbitrary situation with the names of attributes specified by the user: if *target* from a verb is an attribute*/
+    //See simple math for an example
+    private List<Attribute> parseBracket(String parseObject) throws Exception { //Can only be called from readNextCommand, therefore throwing is acceptable
         /*I really can't believe this worked the first time I built it - see file "cool"*/
-
+        List<Attribute> result=new ArrayList<Attribute>();
         String Result="";
         String Name;//=""; //Initilization Unneeded
         int look=0;// = parseObject.indexOf('[');
@@ -59,7 +60,11 @@ public class TrailBlazer {
             do {
                 try {
                     try {
-                        Result+=parseObject.substring(look,parseObject.indexOf('[',look));   //Because the solution will be behind the start, exception is thrown
+                        //Result+=parseObject.substring(look,parseObject.indexOf('[',look));   //Because the solution will be behind the start, exception is thrown
+//                        public void setAttributes(String Type,String Name, String Data, float floatdata, int intData) { //Not reason to return a class as with Attributes
+                        //private Attribute dataToAttribute(String attrName, String parseObject) {
+                          result.add(dataToAttribute("nonunique",parseObject.substring(look,parseObject.indexOf('[',look))));
+                          result.get(result.size() - 1).tag="typed";  
                     }
                     catch (Exception e) {
                         break;
@@ -72,18 +77,35 @@ public class TrailBlazer {
                     //break; //Ignores certain cases of mismatched tags
                 }
                 Attribute userAttribute = myUser.returnAttribute(Name);
-                if (userAttribute==null) Result+="Attribute not found";
-                else {
-                    if (userAttribute.getType().equals("Text")) Result+=userAttribute.getData();
-                    else Result+=Integer.toString(userAttribute.getintData());
+                if (userAttribute==null)  {
+                    result.add(dataToAttribute(Name,"Attribute not found")); //Result+="Attribute not found";
+                    result.get(result.size() - 1).tag="not found"; 
+                }else {
+                    //if (userAttribute.getType().equals("Text")) Result+=userAttribute.getData();
+                    //else Result+=Integer.toString(userAttribute.getintData());
+                    result.add(userAttribute);
+                    result.get(result.size() - 1).tag="retrieved";
                 }
                 look=parseObject.indexOf(']',look)+1; //Plus one to keep from finding the same one over and over/
             } while (look!=0);
-
-
 //            Result+=parseObject.substring(parseObject.length()-parseObject.,parseObject.length());
-        Result+=parseObject.substring(look,parseObject.length());
-        return Result;
+//        Result+=parseObject.substring(look,parseObject.length());
+          result.add(dataToAttribute("nonunique,",parseObject.substring(look,parseObject.length())));
+        return result;
+    }
+
+    private String composeAttributeList(List<Attribute> List,boolean throwError)throws Exception {
+        String result="";
+        for (Attribute list : List) {
+            if (list.tag.equals("not found") && throwError) throw new Exception("An Attribute was not found");
+            try {
+                if (list.getType().equals("Numeric")) result+=Integer.toString(list.getintData());
+                else result+=list.getData();
+            } catch (Exception e) {
+                throw new Exception("Error inside of composeAttributeList: " + e.toString());
+            }
+        }
+        return result;
     }
 
     private String extractTag(String parseObject, char startTag, char endTag) throws Exception {
@@ -142,8 +164,11 @@ public class TrailBlazer {
                 //myUser.send_message("Entering the print subroutine","Server",Message.CHAT);
                 st=this.br.readLine();
                 if (this.br.readLine().equals("---")) { //Send the message
-                    String Result=this.parseBracket(st);
-                    myUser.send_message(Result,"Server",Message.CHAT); //This line of code Actually send the message!
+                    //String Result=this.parseBracket(st);
+                    //myUser.send_message(Result,"Server",Message.CHAT); //This line of code Actually send the message!
+                    String myResult=this.composeAttributeList(this.parseBracket(st),false);
+                    /*This needs to be given intermediary steps so that it can start to find world variables or other players variables*/                    
+                    myUser.send_message(myResult,"Server",Message.CHAT);
                     my_blazes=TrailBlazes.CONTINUE;
                     return;
                 }
@@ -168,12 +193,12 @@ public class TrailBlazer {
                 try { //If the first line does not generate an error, we need to ask the user what is up....
                     String aName;                    
                     //myUser.send_message(" Reading Tag " + attrName,"Server",Message.CHAT);                    
-                    aName=this.extractTag(attrName,'<','>');
+                    aName=this.extractTag(attrName,'<','>'); //This will error if there are tags, going to the catch
                     attrName=aName; //Negates any risk of loosing the last readLine()
                     attrData=br.readLine();
                     if (attrData.equals("---")) {
                         my_blazes=TrailBlazes.INQUIRE;
-                        myUser.askQuestion(attrName,"Please enter a value for " + attrName.substring(1,attrName.length()-1),false,null);
+                        myUser.askQuestion(attrName,"Please enter a value for " + attrName,false,null);
                         return;
                     } else {
                         List<String> Options=new ArrayList<String>();
@@ -205,7 +230,7 @@ public class TrailBlazer {
             if (command.equals("CHATNAME")) {
                 st=this.br.readLine();
                 if (this.br.readLine().equals("---")) {
-                    String Result=this.parseBracket(st);
+                    String Result=this.composeAttributeList(this.parseBracket(st),false);
                     myUser.setChatName(Result);
                     my_blazes=TrailBlazes.CONTINUE;
                     return;
@@ -219,8 +244,17 @@ public class TrailBlazer {
                 try {anAttribute=this.extractTag(anAttribute,'<','>');}catch (Exception e){throw new Exception("Bad reference to attribute for calulation result");}
                     next=this.extractTag(next,'*','*');
                     Attribute result;
-                    Attribute first=this.dataToAttribute("first",this.parseBracket(br.readLine()));
-                    Attribute second=this.dataToAttribute("second",this.parseBracket(br.readLine()));
+                    /*Okay, so to update these attributes: first we check the list size.  The method here is to see if there is one or more than one.
+                      If there is more than one bracket attribute, the only valid syntax is the specifier for WHICH player we are talking about
+                      As a stop-gap, we are going to assume that the information in the first bracket is this even if it matches attribute names
+                      Therefore, our attribute list should be updated to use names from "nonunique" to the original data
+                      ...parseBrackets ahoy
+                    */
+                    
+                    Attribute first=this.parseBracket(br.readLine()).get(0); //Add some error checking such as making sure there IS only one attribute here                 
+                    Attribute second=this.parseBracket(br.readLine()).get(0);
+                    //Attribute first=this.dataToAttribute("first",this.parseBracket(br.readLine()));
+                    //Attribute second=this.dataToAttribute("second",this.parseBracket(br.readLine()));
                     
                     if (!first.getType().equals("Numeric") || !second.getType().equals("Numeric")) throw new Exception("Math entry is not a number"); //Should I be using and/or
                     if (next.equals("ADD")){
@@ -252,12 +286,15 @@ public class TrailBlazer {
             */
 
             if (command.equals("IF")){
-                String firstCondition=this.parseBracket(br.readLine());
+//                String firstCondition=this.parseBracket(br.readLine());
+//                  String firstCondition=this.parseBracket(br.readLine()).get(0).
+                Attribute first=this.parseBracket(br.readLine()).get(0); //Again add debugging based on list size
                 String operator;
                 try {operator=this.extractTag(br.readLine(),'*','*');} catch (Exception e){ throw new Exception("Problem in IF statement");}
-                String secondCondition=this.parseBracket(br.readLine());
-                Attribute first = this.dataToAttribute("First",firstCondition);
-                Attribute second = this.dataToAttribute("Second",secondCondition);
+//                String secondCondition=this.parseBracket(br.readLine());
+                Attribute second=this.parseBracket(br.readLine()).get(0);      
+                //Attribute first = this.dataToAttribute("First",firstCondition);
+                //Attribute second = this.dataToAttribute("Second",secondCondition);
                 String trueResult=br.readLine();
                 String falseResult=br.readLine();
                 if (operator.equals("=")) {
@@ -278,7 +315,7 @@ public class TrailBlazer {
             }
             
            if (command.equals("GOTO")){
-            br=setReader(filePath, this.parseBracket(br.readLine())); //Look at that - no error checking whatsoever.
+            br=setReader(filePath, this.parseBracket(br.readLine()).get(0).getData()); //Look at that - no error checking whatsoever.
             my_blazes=TrailBlazes.CONTINUE;
             return;
            }
