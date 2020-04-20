@@ -42,6 +42,13 @@ Are you an elf, a man, a dwarf, or an orc?
 10
 ---
 ---
+*SIMPLEMATH*
+*SUBTRACT*
+<result>
+5
+10
+---
+---
 *PRINT*
 5-10=[result]
 ---
@@ -60,10 +67,6 @@ hitpoints
 ---
 *PRINT*
 Double your hitpoints is: [double]
----
----
-*SOCIAL*
-CHAT
 ---
 ---
 *IF*

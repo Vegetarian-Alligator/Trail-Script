@@ -28,31 +28,37 @@ public class WsServer extends HttpServlet{
 //     List<String> user_list =new LinkedList<String>();
         //public static final Map<String, Session> sessions = new ConcurrentHashMap<>();
         public static final Map<String, User> Users = new ConcurrentHashMap<>();
+        public static Park myPark=null;
 
-        
     @OnOpen
     public void onOpen(Session session) throws IOException{
         System.out.println("Open Connection ..." + session.getId());
         session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","Welcome to the server"));
-        User a_user=new User("human",session);
-        synchronized (Users) { Users.put(session.getId(), a_user);}        
+        if (myPark==null) { // Create the whole world on the connection of the first user
+            myPark=new Park("Trailscript game");
+            session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","We have created a new Park."));
+        }
+        //User a_user=new User("human",session);
+        //synchronized (Users) { Users.put(session.getId(), a_user);}        
+        myPark.addUser(session.getId(),true,session);        
         return;
     }
      
     @OnClose
     public void onClose(Session session){
         System.out.println("Close Connection ...");
-        Users.remove(session.getId());
+        myPark.removeUser(session.getId());        
+        //Users.remove(session.getId());
     }
      //SetTExt vs SendText?
     @OnMessage
     public void onMessage(Session session, String message) throws IOException{
+        //entityInteract
+        myPark.entityInteract(message,session);
+        /*
         List<String> Input = new ArrayList<String>();
         Input=SerializeJSON.deserializeCommand(message);
-        //session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","message recieved was: " + message + "The type was: " + Input.get(0) + " The data was:" + Input.get(1)));
         message=SanatizeHTML.SanatizedHTML(Input.get(1)); // was message
-//        message.replaceAll("[<].*[>]","tag"); //Very basic way to sanitize html - delete anything between <->.  Merciless.
-        //System.out.println("Message from the client, deSerialized: " + Input.get(1)); // was message
         User this_user;
         synchronized (Users) {
             this_user = Users.get(session.getId());         
@@ -63,7 +69,7 @@ public class WsServer extends HttpServlet{
                 }
         }
         this_user.Refresh();
-
+        */
         return;
     }
  

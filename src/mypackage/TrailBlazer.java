@@ -17,7 +17,6 @@ public class TrailBlazer {
         myUser=calling_user;
         //myUser.send_message("Testing the new Trailblazer system","Server",Message.CHAT);
 
-
         try {
             //this.br = new BufferedReader(new FileReader(startPath+"trailhead.trail"));
               this.br = this.setReader(startPath,"trailhead.trail");
@@ -56,15 +55,19 @@ public class TrailBlazer {
         String Result="";
         String Name;//=""; //Initilization Unneeded
         int look=0;// = parseObject.indexOf('[');
-        if (parseObject.indexOf('[') != -1)
+        if (parseObject.indexOf('[',look) != -1) //What happens if we remove look?
             do {
                 try {
                     try {
                         //Result+=parseObject.substring(look,parseObject.indexOf('[',look));   //Because the solution will be behind the start, exception is thrown
 //                        public void setAttributes(String Type,String Name, String Data, float floatdata, int intData) { //Not reason to return a class as with Attributes
                         //private Attribute dataToAttribute(String attrName, String parseObject) {
-                          result.add(dataToAttribute("nonunique",parseObject.substring(look,parseObject.indexOf('[',look))));
+                          if (parseObject.indexOf('[',look)!= 0) 
+                          {                            
+                            result.add(dataToAttribute("nonunique",parseObject.substring(look,parseObject.indexOf('[',look)))); 
+                          // Without the above if statement, an attribute will be created containing NOTHING - this is bad for functions that expect only one attribute
                           result.get(result.size() - 1).tag="typed";  
+                          }
                     }
                     catch (Exception e) {
                         break;
@@ -91,13 +94,15 @@ public class TrailBlazer {
 //            Result+=parseObject.substring(parseObject.length()-parseObject.,parseObject.length());
 //        Result+=parseObject.substring(look,parseObject.length());
           result.add(dataToAttribute("nonunique,",parseObject.substring(look,parseObject.length())));
+          result.get(result.size() - 1).tag="retrieved after brackets";
         return result;
     }
 
     private String composeAttributeList(List<Attribute> List,boolean throwError)throws Exception {
         String result="";
         for (Attribute list : List) {
-            if (list.tag.equals("not found") && throwError) throw new Exception("An Attribute was not found");
+            
+            if (list.tag.equals("not found") && throwError) throw new Exception("An Attribute was not found"); //This will throw an error if is is NULL
             try {
                 if (list.getType().equals("Numeric")) result+=Integer.toString(list.getintData());
                 else result+=list.getData();
@@ -149,7 +154,7 @@ public class TrailBlazer {
             }
 
             if (st.equals("---")==false) {
-                myUser.send_message("malformed Result was: ","Server: "+st,Message.CHAT);
+                myUser.send_message("malformed Result was: "+st,"Server: ",Message.CHAT);
                 my_blazes=TrailBlazes.INVALID;
                 return;
             }
@@ -159,13 +164,15 @@ public class TrailBlazer {
 
 
             String command = this.extractTag(st, '*','*');
-
+            try {
             if (command.equals("PRINT")) { //The User
                 //myUser.send_message("Entering the print subroutine","Server",Message.CHAT);
                 st=this.br.readLine();
                 if (this.br.readLine().equals("---")) { //Send the message
-                    //String Result=this.parseBracket(st);
-                    //myUser.send_message(Result,"Server",Message.CHAT); //This line of code Actually send the message!
+                    //myUser.send_message("We are about to run parsebracket on : " + st,"Server",Message.CHAT);               
+                    //List<Attribute> buffer=this.parseBracket(st);
+                    //if (buffer==null)myUser.send_message("The result was null!","Server",Message.CHAT);               
+                    //myUser.send_message("We are about to run compose","Server",Message.CHAT);               
                     String myResult=this.composeAttributeList(this.parseBracket(st),false);
                     /*This needs to be given intermediary steps so that it can start to find world variables or other players variables*/                    
                     myUser.send_message(myResult,"Server",Message.CHAT);
@@ -173,7 +180,9 @@ public class TrailBlazer {
                     return;
                 }
             }
-
+            } catch (Exception ee) {
+                throw new Exception(ee.toString() + "Yes, this happened in the print block.");
+            }
             /*Start of the SOCIAL command block*/
             //This should accept PHYSICAL, CHAT, and SOLO, meaning no chat functionality
             if (command.equals("SOCIAL")) {
@@ -216,7 +225,7 @@ public class TrailBlazer {
                 } catch (Exception e) { //For security reasons it might be wise to check WHICH error we have - we just assign the variable
                     attrData=br.readLine();
                     Attribute createAttr;
-                    //myUser.send_message(" No tags foundattrName: " + attrName + " attrData: " + attrData,"Server",Message.CHAT);
+                    myUser.send_message(" No tags foundattrName: " + attrName + " attrData: " + attrData,"Server",Message.CHAT);
                     createAttr=this.dataToAttribute(attrName,attrData);
                     myUser.setAttribute(createAttr);
                     String Choice=br.readLine();
@@ -255,7 +264,8 @@ public class TrailBlazer {
                     Attribute second=this.parseBracket(br.readLine()).get(0);
                     //Attribute first=this.dataToAttribute("first",this.parseBracket(br.readLine()));
                     //Attribute second=this.dataToAttribute("second",this.parseBracket(br.readLine()));
-                    
+                    //myUser.send_message("first was: " + first.getData() + " tag was " + first.tag,"Server: ", Message.CHAT);
+                    //myUser.send_message("second was: " + second.getData() + " tag was " + second.tag,"Server: ", Message.CHAT);
                     if (!first.getType().equals("Numeric") || !second.getType().equals("Numeric")) throw new Exception("Math entry is not a number"); //Should I be using and/or
                     if (next.equals("ADD")){
                         result=this.dataToAttribute(anAttribute,Integer.toString(first.getintData()+second.getintData()));
@@ -272,6 +282,15 @@ public class TrailBlazer {
                         return;
                     }else throw new Exception("malformed SIMPLEMATH statement");
             }
+
+            /*
+                *SIMPLEMATH*
+                *ADD*
+                <result>
+                [first]
+                [second]
+                ---
+            */  
 
             /*
             ---
