@@ -27,7 +27,7 @@ public class TrailMap{
 
     public boolean addNewUser(String name, Session session) {
         if (this.findUser(name)==null) {        
-            Users.put(name, new User(name,session));
+            //Users.put(name, new User(name,session));
             return true;
         }
         else return false;

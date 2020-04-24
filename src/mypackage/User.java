@@ -31,8 +31,6 @@ public class User { // implements Runnable {
         this.in_public_chat=true;
         String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
         myTrail=new TrailBlazer(rootdir,this,null);
-        this.in_public_chat=true;
-        myAttributes.add(new Attribute("Text", "Name", name, 0, 0));
     }
 
     public void setChatName(String myNewChatName) {
@@ -50,7 +48,7 @@ public class User { // implements Runnable {
     public boolean input(String Type, String message) {
         if (Type.equals("CHAT"))
             {
-                return true;
+                if (this.in_public_chat==true) return true;else return false;
             }
         
         if (ask) { //Type should equal "COMMAND" at this point; this "ask" statement must be removed in order for unprompted commands to happen
@@ -96,7 +94,7 @@ public class User { // implements Runnable {
                 return false;
             }
         }
-        return true;
+    return false; //We shouldn't really get to this statement UNLESS someone sends a bad chat command "type" that we do not recognize
     }
 
     public boolean askQuestion(String attrName,String Question,boolean isNumeric,List<String> Options) {

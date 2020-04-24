@@ -229,11 +229,7 @@ public class TrailBlazer {
             if (command.equals("PRINT")) { //The User
                 //myUser.send_message("Entering the print subroutine","Server",Message.CHAT);
                 st=this.br.readLine();
-                if (this.br.readLine().equals("---")) { //Send the message
-                    //myUser.send_message("We are about to run parsebracket on : " + st,"Server",Message.CHAT);               
-                    //List<Attribute> buffer=this.parseBracket(st);
-                    //if (buffer==null)myUser.send_message("The result was null!","Server",Message.CHAT);               
-                    //myUser.send_message("We are about to run compose","Server",Message.CHAT);               
+                if (this.br.readLine().equals("---")) { //Send the message      
                     String myResult=this.composeAttributeList(this.parseBracket(st),false);
                     /*This needs to be given intermediary steps so that it can start to find world variables or other players variables*/                    
                     myUser.send_message(myResult,"Server",Message.CHAT);

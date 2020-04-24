@@ -6,10 +6,12 @@ Implement more sophisticated mathematicall parsing, like what we do with the pri
 
 
 Next steps:
-*Return a "stringlist* from parseBracket
-*Implement modifier for UNIQUE* for (get_attribute) (for example names would have to be unique, the game could then enforce this.)
-*Implement Random Numbers
-*Implement pictures in web mode
+*Return a "stringlist* from parseBracket - COMPLETE
+*Implement modifier for UNIQUE* for (get_attribute) (for example names would have to be unique, the game could then enforce this.) - COMPLETE
+    Implement a modifier to make sure that the game throws an appropriate error message when a user trail leads to a .trail file meant for a "park"
+
+*Implement Random Numbers - COMPLETE
+*Implement pictures in web mode - COMPLETE
 *Implement Verbs
     *Must be Able to do specific actions to the "target" and the "actor"
     *Each must be able to see the others attributes in order to make sure that they can 
@@ -40,3 +42,6 @@ Next steps:
 *Impelement Timers
 *Implement Floating Point Calculations
 *Implement some sort of *save* function
+*Implement some sort of *PROHIBITED* function for values
+*Upgrade "RANDOM" to a "DICE" command as many do
+*Change all those instances of parseBracket().get(0) to a getFirst function, for greater security (we ignore double brackets, not detecting the error)

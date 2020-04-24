@@ -37,9 +37,7 @@ public class WsServer extends HttpServlet{
         if (myPark==null) { // Create the whole world on the connection of the first user
             myPark=new Park("Trailscript game");
             session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","We have created a new Park."));
-        }
-        //User a_user=new User("human",session);
-        //synchronized (Users) { Users.put(session.getId(), a_user);}        
+        } 
         myPark.addUser(session.getId(),true,session);        
         return;
     }
@@ -48,28 +46,12 @@ public class WsServer extends HttpServlet{
     public void onClose(Session session){
         System.out.println("Close Connection ...");
         myPark.removeUser(session.getId());        
-        //Users.remove(session.getId());
     }
      //SetTExt vs SendText?
     @OnMessage
     public void onMessage(Session session, String message) throws IOException{
         //entityInteract
         myPark.entityInteract(message,session);
-        /*
-        List<String> Input = new ArrayList<String>();
-        Input=SerializeJSON.deserializeCommand(message);
-        message=SanatizeHTML.SanatizedHTML(Input.get(1)); // was message
-        User this_user;
-        synchronized (Users) {
-            this_user = Users.get(session.getId());         
-                
-            if (this_user.input(Input.get(0),Input.get(1)))
-                for (String key : Users.keySet()) { 
-                    Users.get(key).send_message(Input.get(1),this_user.getChatName(),Message.CHAT); //Was message
-                }
-        }
-        this_user.Refresh();
-        */
         return;
     }
  

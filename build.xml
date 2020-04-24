@@ -307,6 +307,9 @@
           <include name="falsetest.trail"/>
           <include name="addition.trail"/>
           <include name="socket_test.html" />
+          <include name="gameworld.trail"  />
+          <include name="man.trail"  />
+          <include name="play.trail"  />
           <include name="images/*" />
           <include name="file_reference"/>
         </fileset>

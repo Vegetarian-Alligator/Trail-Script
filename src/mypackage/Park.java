@@ -20,9 +20,7 @@ public class Park {
         this.myName=myName;
         String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
         this.myBlazes=new TrailBlazer(rootdir,null,this);
-        //uniqueAttributes.add("name"); //currently hard coding "name" as a unique attribute - much easier of testing, also possibly a good idea
       }
-
 
       private int findUniqueAttribute(String name) { //Remember 0 evaluates to false
         int index=0;
@@ -57,10 +55,6 @@ public class Park {
         /*If, however, the thing is in the list of unique attributes we have to check every player
         on the map for first having this attribute, then seeing what it is*/
 
-//Get the iterator framework off of geeksforgeeks, I don't understand the type casting here
-        //Iterator myIterator=Users.entrySet().iterator();
-        //for (User checkUser : Users.keySet()) {
-        //while (myIterator.hasNext()) {
         for (User value : Users.values()) {
             Attribute Compare= value.returnAttribute(name);//(User)element.getValue().returnAttribute(name);//checkUser.returnAttribute(name);
             if (Compare != null) {
