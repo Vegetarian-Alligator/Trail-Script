@@ -3,16 +3,20 @@
 SOLO
 ---
 ---
+*PICTURE_URL*
+https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Fist.svg/2000px-Fist.svg.png
+---
+---
 *PRINT*
-Hi!  What is your name?
+Hi!  Welcomes to pointless punch, the game that tests how fast you can click, how fast your internet is, and then mangles the results meaninglessly. 
+---
+---
+*PRINT*
+Hi!  What is your name!
 ---
 ---
 *GET_ATTRIBUTE*
 <name>
----
----
-*PRINT*
-Welcome to the server, [name]!  Also, your name is [name]
 ---
 ---
 *PRINT*
@@ -27,52 +31,10 @@ Are you an elf, a man, a dwarf, or an orc?
 &man&
 ---
 ---
-*PRINT*
-[name], you are a [species].
----
----
-*CHATNAME*
-[name] ([species])
----
----
-*SIMPLEMATH*
-*SUBTRACT*
-<result>
-5
-10
----
----
-*SIMPLEMATH*
-*SUBTRACT*
-<result>
-5
-10
----
----
-*PRINT*
-5-10=[result]
----
----
-*GET_ATTRIBUTE*
-hitpoints
-9
----
----
-*SIMPLEMATH*
-*MULTIPLY*
-<double>
-[hitpoints]
-2
----
----
-*PRINT*
-Double your hitpoints is: [double]
----
----
 *IF*
-[hitpoints]
+[species]
 *=*
-5
-truetest.trail
-falsetest.trail
+man
+man.trail
+threeleft.trail
 ---

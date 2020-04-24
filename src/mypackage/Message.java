@@ -3,5 +3,6 @@ package mypackage;
 public enum Message{
     RAW,
     CHAT,
-    COMMAND
+    COMMAND,
+    HTML_IMAGE
 }

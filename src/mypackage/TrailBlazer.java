@@ -13,27 +13,84 @@ public class TrailBlazer {
     private String filePath;
     private BufferedReader br;
     User myUser;
-    TrailBlazer (String startPath, User calling_user) {
+    Park myPark;
+    TrailBlazer (String startPath, User calling_user, Park calling_park) {
         myUser=calling_user;
         //myUser.send_message("Testing the new Trailblazer system","Server",Message.CHAT);
 
-        try {
-            //this.br = new BufferedReader(new FileReader(startPath+"trailhead.trail"));
-              this.br = this.setReader(startPath,"trailhead.trail");
-              this.filePath=startPath;
-            my_blazes=TrailBlazes.CONTINUE;
-            this.Parse();
+      if (calling_park !=null) { //It is important this if statement is first: just in case we want to allow the world (park) itself to play someday, it is set up before playing
+        try {        
+        this.myPark=calling_park;
+        this.br = this.setReader(startPath,"gameworld.trail");
+        this.filePath=startPath;
+        this.parsePark();
+      } catch (Exception e) {
+        //We don't handle this very well - we should probably log failures of communication, at least
+      }
+      }
 
-        } catch (IOException e) { //NoSuchElementException
-            //myUser.send_message("IO Exception has occured "+ e.toString(),"Server",Message.CHAT);
+        if (calling_user != null) {
+            try {
+                //this.br = new BufferedReader(new FileReader(startPath+"trailhead.trail"));
+                  this.br = this.setReader(startPath,"trailhead.trail");
+                  this.filePath=startPath;
+                my_blazes=TrailBlazes.CONTINUE;
+                this.Parse();
+            } catch (IOException e) { //NoSuchElementException
+                //myUser.send_message("IO Exception has occured "+ e.toString(),"Server",Message.CHAT);
+            }
+            //while ((st = br.readLine()) != null)
         }
-        //while ((st = br.readLine()) != null)
-
 
     }
     
     private BufferedReader setReader(String startPath, String startFile) throws IOException {
         return new BufferedReader(new FileReader(startPath+startFile)); // Returns instead of sets br in case we ever implement "return" branches
+    }
+
+
+    private boolean advance() {
+        String st;
+        try {
+            st=br.readLine();
+        } catch(Exception e) {
+            my_blazes=TrailBlazes.INVALID;
+            myUser.send_message("Probably end of file: "+ e.toString(),"Server",Message.CHAT);
+            return false;
+        }
+
+        if (st==null) {
+                //myUser.send_message("End of file","Server",Message.CHAT);
+                my_blazes=TrailBlazes.INVALID;
+                return false;
+            }
+
+            if (st.equals("---")==false) {
+                myUser.send_message("malformed Result was: "+st,"Server: ",Message.CHAT);
+                my_blazes=TrailBlazes.INVALID;
+                return false;
+            }
+        return true;
+    }
+
+    public void parsePark() {
+    try {        
+        String st;        
+        if (!this.advance()) return;
+        st=this.br.readLine();
+        String command = this.extractTag(st, '*','*');
+
+        if (command.equals("UNIQUE")) {
+            st=br.readLine();
+            if (br.readLine().equals("---")) this.myPark.setUniqueAttribute(st); //all the lower case handling is inside of 
+        }
+
+
+    }catch (Exception ee) {
+            my_blazes=TrailBlazes.INVALID;
+            myUser.send_message("problems has Occured when creating the world: "+ ee.toString(),"Server",Message.CHAT);
+            return;
+    }
     }
 
     public void Parse() {
@@ -137,16 +194,20 @@ public class TrailBlazer {
 
     public void readNextCommand() {
         String st;
-        try {
+        if (!this.advance()) return;
+        /*try {
             st=br.readLine();
         } catch(Exception e) {
             my_blazes=TrailBlazes.INVALID;
             myUser.send_message("Probably end of file: "+ e.toString(),"Server",Message.CHAT);
             return;
         }
+        */
+        
 
 
         try {
+/*
             if (st==null) {
                 //myUser.send_message("End of file","Server",Message.CHAT);
                 my_blazes=TrailBlazes.INVALID;
@@ -158,7 +219,7 @@ public class TrailBlazer {
                 my_blazes=TrailBlazes.INVALID;
                 return;
             }
-
+*/
 
             st=this.br.readLine();
 
@@ -338,6 +399,30 @@ public class TrailBlazer {
             my_blazes=TrailBlazes.CONTINUE;
             return;
            }
+
+           if (command.equals("PICTURE_URL")) {
+            st=br.readLine();
+            if (br.readLine().equals("---")){
+                //<img src="smiley.gif" alt="Smiley face" width="42" height="42">
+                myUser.send_message("we found a picture","Server",Message.CHAT);
+                myUser.send_message(st,"Server",Message.HTML_IMAGE);
+            }
+            else throw new Exception("Problem in the picture file");
+           }
+
+            if (command.equals("RANDOM")) {
+                myUser.send_message("beggining random","Server",Message.CHAT);
+                Attribute bottom = this.parseBracket(br.readLine()).get(0); //This is the problem!!  Prasebracket is not appropriate
+                Attribute top    = this.parseBracket(br.readLine()).get(0);
+                myUser.send_message("we have parsed top and bottom numbers","Server",Message.CHAT);
+                if (top.getType()!="Numeric" || bottom.getType()!="Numeric") throw new Exception("Something is wrong with a random number");
+                Attribute set=this.parseBracket(br.readLine()).get(0);
+                Random rand = new Random();
+                int result = rand.nextInt(top.getintData()-bottom.getintData())+bottom.getintData();
+//              private Attribute dataToAttribute(String attrName, String parseObject) {
+                if (br.readLine().equals("---")) myUser.setAttribute(dataToAttribute(set.getName(),Integer.toString(result))); //....This is comically inefficient
+                else throw new Exception("Syntax Error");
+            }
             
         } catch(Exception e) { //If this happens, we may have a simple end of file.
             my_blazes=TrailBlazes.INVALID;
