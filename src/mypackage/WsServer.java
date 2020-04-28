@@ -45,7 +45,9 @@ public class WsServer extends HttpServlet{
     @OnClose
     public void onClose(Session session){
         System.out.println("Close Connection ...");
-        myPark.removeUser(session.getId());        
+        if (myPark != null) myPark.removeUser(session.getId());
+        else SerializeJSON.addLog("It is unkown why this is disconnected.");
+        
     }
      //SetTExt vs SendText?
     @OnMessage

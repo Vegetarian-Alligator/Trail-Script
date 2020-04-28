@@ -10,6 +10,7 @@ public class User { // implements Runnable {
     private boolean ask;
     String Waiting;
     private TrailBlazer myTrail;
+    private TrailBlazer myVerbTrail;
     List<Attribute> myAttributes=new ArrayList<Attribute>();
     List<String> attrChoice;
     private String chatName;
@@ -18,9 +19,12 @@ public class User { // implements Runnable {
     private String lastQuestion;
     private boolean lastNumeric;
     private List<String> lastOptions;
+    private List<User> eligiblePlayers;
+    int tempcount;
 
     User(String name, Session my_session, Park myPark)
     {
+        tempcount=0;
         this.myPark=myPark;
         this.AI=false;
         this.name=name;
@@ -30,7 +34,7 @@ public class User { // implements Runnable {
         this.session=my_session;
         this.in_public_chat=true;
         String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
-        myTrail=new TrailBlazer(rootdir,this,null);
+        myTrail=new TrailBlazer(rootdir,this,null,null);
     }
 
     public void setChatName(String myNewChatName) {
@@ -45,12 +49,38 @@ public class User { // implements Runnable {
         myTrail.Parse();
     }
 
+    public boolean targetVerb(Verb myVerb) { //This always returns true for testing reasons
+        return true; //This should check conditions to see if the player is eligible for verbage
+    }
+
+    public boolean callerVerb(Verb myVerb,List<User> eligiblePlayers){ //This will publish the verb to the player if eligible; it also returns a value to prevent hackers lol
+        this.eligiblePlayers=eligiblePlayers;
+        this.send_message(myVerb.getName(),null,Message.VERB_UPDATE);
+        this.eligiblePlayers=null; //free the memory, we should never need that again??
+        
+        //For the next time I work:
+        //I need to convert the list of Users into a list of strings.  Not hard, but, requires
+        //loading all the attributes of the "name" type, handling it if things go wrong (say, exclude them from the list)
+        //And THEN, finally, call this.send_message!!
+
+
+        
+
+        return true;
+    }
+
+    public void verbTrail(Verb verbReference) {
+        String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
+        //myVerbTrail=new(rootdir,this,null,verbReference);
+    }
+
     public boolean input(String Type, String message) {
         if (Type.equals("CHAT"))
-            {
-                if (this.in_public_chat==true) return true;else return false;
-            }
-        
+        {
+            if (this.in_public_chat==true) return true;
+            else return false;
+        }
+
         if (ask) { //Type should equal "COMMAND" at this point; this "ask" statement must be removed in order for unprompted commands to happen
             if (myPark.uniqueAttributeAllowed(Waiting,message)) {
                 if (attrChoice==null) {
@@ -94,7 +124,7 @@ public class User { // implements Runnable {
                 return false;
             }
         }
-    return false; //We shouldn't really get to this statement UNLESS someone sends a bad chat command "type" that we do not recognize
+        return false; //We shouldn't really get to this statement UNLESS someone sends a bad chat command "type" that we do not recognize
     }
 
     public boolean askQuestion(String attrName,String Question,boolean isNumeric,List<String> Options) {
@@ -149,6 +179,7 @@ public class User { // implements Runnable {
         }
     }
 
+
     public void setAttribute(Attribute newAttribute) { //For thread safety: this MUST be in a synchronized statement!
         Attribute manipular;
         manipular=null; //Since it may not be set in the case of an exception
@@ -185,11 +216,11 @@ public class User { // implements Runnable {
                 //Question, "Server", Message.COMMAND
                 if (this.attrChoice==null) this.session.getBasicRemote().sendText(SerializeJSON.Serialize("command",sender + ": " + message));
                 else {
-                    //this.send_message("We are starting to Serialize the JSON now... Item Count: +" + this.attrChoice.size(),"Server",Message.CHAT);                    
+                    //this.send_message("We are starting to Serialize the JSON now... Item Count: +" + this.attrChoice.size(),"Server",Message.CHAT);
                     //String result=SerializeJSON.Serialize("commandlist",this.attrChoice);
                     //if (result==null)  this.send_message("Result was null!","Server commandlist: ",Message.CHAT); else this.send_message(result,"Server commandlist: ",Message.CHAT);
-                    //System.out.println("Serialization Result: " + result);                  
-                    //this.send_message("Should have sent the command list as a chat string","Server",Message.CHAT);                    
+                    //System.out.println("Serialization Result: " + result);
+                    //this.send_message("Should have sent the command list as a chat string","Server",Message.CHAT);
                     this.session.getBasicRemote().sendText(SerializeJSON.Serialize("commandlist",this.attrChoice));
                 }
                 return;
@@ -198,8 +229,20 @@ public class User { // implements Runnable {
             if (type==Message.HTML_IMAGE) {
                 this.session.getBasicRemote().sendText(SerializeJSON.Serialize("htmlimage",message));
             }
+
+            if (type==Message.VERB_UPDATE) {
+                //eligiblePlayers.add(0,message);
+                tempcount+=1;
+                String listy=new String();
+                for (String nextUser : myPark.playersToNames()){
+                    listy+=nextUser;
+                }
+                this.session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","There has been an update from the verb processing.  Targets: " + listy));
+                //this.session.getBasicRemote().sendText(SerializeJSON.Serialize("verb",eligiblePlayers));
+            }
         } catch (Exception e) {
-            try{this.send_message("EXCEPTION in send_message: " + e.toString(),"Server",Message.CHAT);}catch (Exception ee) {}
+            try {this.send_message("EXCEPTION in send_message: " + e.toString(),"Server",Message.CHAT);}
+            catch (Exception ee) {}
         }
     }
 

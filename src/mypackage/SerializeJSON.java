@@ -3,9 +3,28 @@ package mypackage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.*;
+import java.nio.*;
+import java.nio.file.*; //Used for "Path" variable;Also: StandardOpenOption //Also: Files
+import java.nio.charset.*; //for the StandardCharsets.UTF_8 options
+import java.util.logging.*;//*Logger
 
 public class SerializeJSON {
-    
+public static java.nio.file.Path logger=null;
+public static List<String> lines = Arrays.asList("The first line", "The second line");
+public static Logger LOGGER = Logger.getLogger(SerializeJSON.class.getName());
+
+public static void initilizeLogger(){
+        LOGGER.info("Logger Name: "+LOGGER.getName());
+}
+
+public static void addLog(String info) {
+    LOGGER.info("SerializeJSON logging:" + info);
+}
+
+public static void log(String input) {
+    try {Files.write(logger, Arrays.asList(input), StandardCharsets.UTF_8, StandardOpenOption.APPEND);}catch(Exception e){}
+}
+
 public static String Serialize(String type, String data){
     return "{\"type\":\"" + type + "\",\"data\":\"" + data + "\"}";
 }
@@ -16,6 +35,8 @@ public static String Serialize(String type, List<String> data) throws RuntimeExc
 //  "age":30,
 //  "cars":[ "Ford", "BMW", "Fiat" ]
 //};
+
+
 
     String output;
     output="{\"type\":\"" + type + "\",\"datalist\":[\"";
