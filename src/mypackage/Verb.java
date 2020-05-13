@@ -21,6 +21,7 @@ abstract class action {
 
     action(verbTarget atarget) {//,myCaller,myTarget) {
         this.receipient=atarget;
+        nextItem=null;
         //this.myCaller=myCaller;
         //this.myTarget=myTarget;
     }
@@ -108,8 +109,10 @@ public class Verb {
     private List<Attribute> callerNegation; //Must not be true of the caller
     private List<Attribute> targetNegation; //Must not be true of the target
     private boolean self=false;
-    private action myAction;
-    private action currentAction;
+    //private action myAction;
+    //private action currentAction;
+    private List<Action> myInstructions=new ArrayList<Attribute>();
+    private int listCount;
     Map<String, verbAttribute> memory;
     TrailBlazer myBlazer;
     verbTarget myTarget;
@@ -127,6 +130,7 @@ public class Verb {
         myAction=null;
         currentAction=null;
         SerializeJSON.addLog("Verb has been completed");
+        listCount=0;
 //        myBlazer=new TrailBlazer(rootdir,null,null,this);
     }
 
@@ -150,26 +154,34 @@ public class Verb {
             
         }
     }
-
+/*
     private action getLastAction() {
         if (myAction==null) return myAction;
         SerializeJSON.addLog("Returning something other than myAction");
         return currentAction.nextItem;
            
     }
-
+*/
     public void addTargetPath(String path){
-        SerializeJSON.addLog("adding a target path");
-        action targetAction=getLastAction();
-        targetAction=new Path(verbTarget.TARGET,path);
-        currentAction=targetAction;
+//        SerializeJSON.addLog("adding a target path");
+//        action targetAction=getLastAction();
+//        targetAction=new Path(verbTarget.TARGET,path);
+//        currentAction=targetAction;
+
+
+
     }
-    
+
+
+    public void addAction(Action nextAction) {
+        
+        listCount+=1;
+    }
     public void addCallerPath(String path) {
-                SerializeJSON.addLog("adding a caller path");
+        /*SerializeJSON.addLog("adding a caller path");
         action targetAction=getLastAction();
         targetAction=new Path(verbTarget.SELF,path);
-        currentAction=targetAction;
+        currentAction=targetAction;*/
     }
 
     //createList assembles the list of verbs that a user may go through
