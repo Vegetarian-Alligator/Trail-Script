@@ -29,11 +29,13 @@ public class Park {
         this.myBlazes=new TrailBlazer(rootdir,null,this,null); //This initilizes the world
         new Verb();        
         try {
-            myVerbs.add(new Verb()); //Hacky placeholder, but let's debug this thing..
+            //myVerbs.add(new Verb()); //Hacky placeholder, but let's debug this thing..
             } catch (Exception e) {
                     SerializeJSON.addLog("This is what was making .add puke: " + e.toString());
             }
+        Verb booleanVerb=new Verb();
         readVerbs=new TrailBlazer(rootdir,null,null,myVerbs);
+        myVerbs.add(booleanVerb); ///And we can only handle one verb so far.
 }
 
 private int findUniqueAttribute(String name) { //Remember 0 evaluates to false
@@ -100,15 +102,14 @@ public void entityInteract(String rawInput, Session session) {
             for (String key : Users.keySet()) {
                 Users.get(key).send_message(Input.get(1),this_user.getChatName(),Message.CHAT); //Was message
             }
+    this_user.Refresh(); //If you don't do this, more than one thread might be calling readNextCommand simultanously
+                         //So with this system, we can really only read one of them at a time 
     }
-    this_user.Refresh();
     List<Boolean> affirmations=new ArrayList<Boolean>();
     synchronized (Users) {
         for (Verb myVerb : myVerbs) {
             for (String key : Users.keySet()) { //This first loop figures out all players that are eligible
-
                 affirmations.add(new Boolean(Users.get(key).targetVerb(myVerb)));
-
             }
             eligiblePlayers.clear(); //Or the list from the last verb.. will still be there
             int listCount;
@@ -125,8 +126,32 @@ public void entityInteract(String rawInput, Session session) {
                 Users.get(key).callerVerb(myVerb,eligiblePlayers);
             }
         }
-
     
+
+    //TESTING ONLY!
+    //Now is time for the 
+     if (Input.get(1).contains("!")) {
+            String target= Input.get(1).substring(0,Input.get(1).indexOf("!"));
+            String verbName = Input.get(1).substring(Input.get(1).indexOf("!")+1);
+
+            User targetUser=null;
+            User callingUser;
+            Verb verbVerb;
+
+                for (String key : Users.keySet()) { //This one mostly just turns it into a list; could be integrated
+                Attribute myAttribute;               
+                myAttribute=Users.get(key).returnAttribute("name");
+                //if (Users.get(key).returnAttribute("name").getData().equals(target)) {
+                if (myAttribute!=null) 
+                if (myAttribute.getData().equals(target)) {
+                    targetUser=Users.get(key);
+                }
+//    public void send_message(String message, String sender, Message type) { //boolean public_message
+                if (targetUser!=null) targetUser.send_message("You have been targeted by a verb!"+verbName,"Server",Message.CHAT);
+
+                
+            }
+        }
     }
 }
 

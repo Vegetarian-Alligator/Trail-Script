@@ -8,7 +8,8 @@ import java.util.concurrent.*;
 enum verbTarget {
     TARGET, //This action happens to the target
     SELF,   //This action happens to the caller
-    SEARCH  //This action requires a paramater-based search of surrounding entities
+    SEARCH,  //This action requires a paramater-based search of surrounding entities
+    IRR      //This action means that it doesn't matter who is the target
 }
 
 
@@ -65,24 +66,6 @@ class Path extends action {
 
  
 
-/*
-class simpleMath extends action {
-    private String Operation;
-    simpleMath(String Action, String firstAttr, String secondAttr, boolean firstAttrTarget, boolean secondAttrTarget,String Operation) {
-        super(Action, firstAttr, secondAttr, firstAttrTarget,secondAttrTarget);
-        if (Operation.equals("*") || Operation.equals("/") || Operation.equals("+") || Operation.equals("-"))
-            this.Operation=Operation;//else throw new Exception("Invalid Operation!");
-    }
-}
-
-class print extends action {
-    String Message;
-    print(String Action, String firstAttr, String secondAttr, boolean firstAttrTarget, boolean secondAttrTarget,String Message) {
-        super(Action, firstAttr, secondAttr, firstAttrTarget,secondAttrTarget);
-        this.Message=Message;
-    }
-}
-*/
 
 class verbAttribute {
     private String Name;
@@ -111,7 +94,7 @@ public class Verb {
     private boolean self=false;
     //private action myAction;
     //private action currentAction;
-    private List<Action> myInstructions=new ArrayList<Attribute>();
+    private List<action> myInstructions=new ArrayList<action>();
     private int listCount;
     Map<String, verbAttribute> memory;
     TrailBlazer myBlazer;
@@ -127,8 +110,8 @@ public class Verb {
         callerNegation=new ArrayList<Attribute>();
         myTarget=verbTarget.TARGET;
         String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/"; //This needs to be a parameter, but it does not matter for now
-        myAction=null;
-        currentAction=null;
+        //myAction=null;
+        //currentAction=null;
         SerializeJSON.addLog("Verb has been completed");
         listCount=0;
 //        myBlazer=new TrailBlazer(rootdir,null,null,this);
@@ -154,26 +137,18 @@ public class Verb {
             
         }
     }
-/*
-    private action getLastAction() {
-        if (myAction==null) return myAction;
-        SerializeJSON.addLog("Returning something other than myAction");
-        return currentAction.nextItem;
-           
-    }
-*/
+
     public void addTargetPath(String path){
-//        SerializeJSON.addLog("adding a target path");
-//        action targetAction=getLastAction();
-//        targetAction=new Path(verbTarget.TARGET,path);
-//        currentAction=targetAction;
 
+          //myInstructions.add(path);
+          listCount+=1;
+          
 
 
     }
 
 
-    public void addAction(Action nextAction) {
+    public void addAction(action nextAction) {
         
         listCount+=1;
     }

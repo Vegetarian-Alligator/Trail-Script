@@ -55,18 +55,20 @@ public class User { // implements Runnable {
 
     public boolean callerVerb(Verb myVerb,List<User> eligiblePlayers){ //This will publish the verb to the player if eligible; it also returns a value to prevent hackers lol
         this.eligiblePlayers=eligiblePlayers;
-        this.send_message(myVerb.getName(),null,Message.VERB_UPDATE);
+        this.send_message(myVerb.getName(),myVerb.getName(),Message.VERB_UPDATE);
         this.eligiblePlayers=null; //free the memory, we should never need that again??
         
         //For the next time I work:
         //I need to convert the list of Users into a list of strings.  Not hard, but, requires
         //loading all the attributes of the "name" type, handling it if things go wrong (say, exclude them from the list)
         //And THEN, finally, call this.send_message!!
-
-
-        
-
         return true;
+    }
+
+    public boolean executeVerb(Verb myVerb){ //This executes the verb....
+        String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";        
+        //TrailBlazer verbTrail=new TrailBlazer(
+        return false;
     }
 
     public void verbTrail(Verb verbReference) {
@@ -124,8 +126,11 @@ public class User { // implements Runnable {
                 return false;
             }
         }
+
+        
         return false; //We shouldn't really get to this statement UNLESS someone sends a bad chat command "type" that we do not recognize
     }
+
 
     public boolean askQuestion(String attrName,String Question,boolean isNumeric,List<String> Options) {
         if (!AI) {
@@ -234,11 +239,15 @@ public class User { // implements Runnable {
                 //eligiblePlayers.add(0,message);
                 tempcount+=1;
                 String listy=new String();
+                List<String> targetList=new ArrayList<String>();
+//                targetList.add(0,message);
+                targetList.add(message);
                 for (String nextUser : myPark.playersToNames()){
                     listy+=nextUser;
+                    targetList.add(nextUser);
                 }
                 this.session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","There has been an update from the verb processing.  Targets: " + listy));
-                //this.session.getBasicRemote().sendText(SerializeJSON.Serialize("verb",eligiblePlayers));
+                this.session.getBasicRemote().sendText(SerializeJSON.Serialize("verb",targetList));
             }
         } catch (Exception e) {
             try {this.send_message("EXCEPTION in send_message: " + e.toString(),"Server",Message.CHAT);}
