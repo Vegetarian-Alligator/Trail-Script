@@ -136,7 +136,7 @@ public void entityInteract(String rawInput, Session session) {
 
             User targetUser=null;
             User callingUser;
-            Verb verbVerb;
+            Verb verbVerb=null;
 
                 for (String key : Users.keySet()) { //This one mostly just turns it into a list; could be integrated
                 Attribute myAttribute;               
@@ -147,9 +147,14 @@ public void entityInteract(String rawInput, Session session) {
                     targetUser=Users.get(key);
                 }
 //    public void send_message(String message, String sender, Message type) { //boolean public_message
-                if (targetUser!=null) targetUser.send_message("You have been targeted by a verb!"+verbName,"Server",Message.CHAT);
-
-                
+                if (targetUser!=null) {
+                    for (Verb vKey : myVerbs) { //Now check to make sure that the requested verb.. actually is a verb
+                        if (vKey.getName().equals(verbName)) {
+                            verbVerb=vKey;
+                        }
+                    }
+                }
+            if (verbVerb != null) targetUser.send_message("You have been targeted by a verb!"+verbName,"Server",Message.CHAT);
             }
         }
     }
