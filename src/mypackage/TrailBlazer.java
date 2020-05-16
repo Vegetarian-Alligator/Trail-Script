@@ -15,7 +15,12 @@ public class TrailBlazer {
     User myUser;
     Park myPark;
     Verb myVerb;
+    
     private List<Verb> myVerbs = new ArrayList<Verb>();
+
+    public List<Verb> returnVerbs(){
+        return myVerbs;
+    }
     TrailBlazer (String startPath, User calling_user, Park calling_park, List<Verb> calling_verb) { //Honestly, verb may as well have been a boolean at this point
         SerializeJSON.addLog("Blazing a trail!");
         myUser=calling_user;
@@ -31,6 +36,7 @@ public class TrailBlazer {
                 my_blazes=TrailBlazes.CONTINUE;
                 this.parseVerb();
                 calling_verb=myVerbs;
+                SerializeJSON.addLog("Count in calling_verb: " + calling_verb.size());
                 return;
             }catch (Exception e) {
                 SerializeJSON.addLog("Something went terribly wrong trying to start reading the file."+ e.toString());
