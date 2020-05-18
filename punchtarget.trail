@@ -1,4 +1,15 @@
 ---
 *PRINT*
-Someone punched you
+[attackername] punched you
+---
+---
+*SIMPLEMATH*
+*SUBTRACT*
+<hitpoints>
+[hitpoints]
+1
+---
+---
+*PRINT*
+You have [hitpoints] left
 ---

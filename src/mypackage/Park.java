@@ -27,7 +27,7 @@ public class Park {
         String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
         SerializeJSON.initilizeLogger();
         SerializeJSON.addLog("This should be in the log for sure.");
-        this.myBlazes=new TrailBlazer(rootdir,null,this,null); //This initilizes the world
+        this.myBlazes=new TrailBlazer(rootdir,null,this,null,null); //This initilizes the world
         new Verb();
         try {
             //myVerbs.add(new Verb()); //Hacky placeholder, but let's debug this thing..
@@ -35,7 +35,7 @@ public class Park {
             SerializeJSON.addLog("This is what was making .add puke: " + e.toString());
         }
         Verb booleanVerb=new Verb();
-        readVerbs=new TrailBlazer(rootdir,null,null,myVerbs);
+        readVerbs=new TrailBlazer(rootdir,null,null,myVerbs,null);
         myVerbs=readVerbs.returnVerbs();
         SerializeJSON.addLog("Size of myVerbs: "+myVerbs.size());
         //myVerbs.add(booleanVerb); ///And we can only handle one verb so far.
@@ -136,41 +136,46 @@ public class Park {
             //Now is time for the
             SerializeJSON.addLog("Starting to look at verbs again");
             SerializeJSON.addLog("variance");
-            Users.get(session.getId()).send_message("Debug info:" + myVerbs.size(),"Server", Message.CHAT);
             if (Input.get(1).contains("!")) {
 
                 String target= Input.get(1).substring(0,Input.get(1).indexOf("!"));
                 String verbName = Input.get(1).substring(Input.get(1).indexOf("!")+1);
-                SerializeJSON.addLog("Name: " + target + " Verb: " + verbName);            
+                SerializeJSON.addLog("Name: " + target + " Verb: " + verbName);
                 User targetUser=null;
                 User callingUser;
                 Verb verbVerb=null;
 
                 for (String key : Users.keySet()) { //This one mostly just turns it into a list; could be integrated
-                    Attribute myAttribute;
-                    myAttribute=Users.get(key).returnAttribute("name");
+
+                    Attribute myAttribute=null;
+                    if (Users.get(key)!=null) myAttribute=Users.get(key).returnAttribute("name");
+                    else SerializeJSON.addLog("null Users.get(key) where key = " + key);
                     //if (Users.get(key).returnAttribute("name").getData().equals(target)) {
                     if (myAttribute!=null)
+                       if (myAttribute.getData() != null) SerializeJSON.addLog("User: "+myAttribute.getData());
                         if (myAttribute.getData().equals(target)) {
                             targetUser=Users.get(key);
                         }
-                 } 
+                }
 //    public void send_message(String message, String sender, Message type) { //boolean public_message
-                    SerializeJSON.addLog("assessing target user");            
-                    if (targetUser!=null) {
+                SerializeJSON.addLog("assessing target user");
+                if (targetUser!=null) {
                     SerializeJSON.addLog("Target User is not Null");
 //                    Users.get(session.getId()).send_message("targetUser is not NULL; name of verb: "+myVerbs.get(0).getName(),"Server", Message.CHAT);
-                    
-                        for (Verb vKey : myVerbs) { //Now check to make sure that the requested verb.. actually is a verb
-                            SerializeJSON.addLog("Name of verb: " + vKey.getName());
-                            if (vKey.getName().equals(verbName)) {
-                                verbVerb=vKey;
-                            }
+
+                    for (Verb vKey : myVerbs) { //Now check to make sure that the requested verb.. actually is a verb
+                        SerializeJSON.addLog("Name of verb: " + vKey.getName());
+                        if (vKey.getName().equals(verbName)) {
+                            verbVerb=vKey;
                         }
                     }
-                
-                    if (verbVerb != null) {SerializeJSON.addLog("You have been targeted by a verb!"+verbName);targetUser.send_message("You have been targeted by a verb!"+verbName,"Server",Message.CHAT); }
-                    
+                }
+
+                if (verbVerb != null) { //Its time to go execute this verb!
+                    SerializeJSON.addLog("assessing target user");
+                    verbVerb.execute(targetUser,Users.get(session.getId()));
+                } else SerializeJSON.addLog("No verb found");
+
             }
         }
     }

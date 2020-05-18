@@ -3,6 +3,11 @@
 SOLO
 ---
 ---
+*GET_ATTRIBUTE*
+alive
+true
+---
+---
 *PICTURE_URL*
 https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Fist.svg/2000px-Fist.svg.png
 ---

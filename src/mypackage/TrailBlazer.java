@@ -21,7 +21,7 @@ public class TrailBlazer {
     public List<Verb> returnVerbs(){
         return myVerbs;
     }
-    TrailBlazer (String startPath, User calling_user, Park calling_park, List<Verb> calling_verb) { //Honestly, verb may as well have been a boolean at this point
+    TrailBlazer (String startPath, User calling_user, Park calling_park, List<Verb> calling_verb,String instructions) { //Honestly, verb may as well have been a boolean at this point
         SerializeJSON.addLog("Blazing a trail!");
         myUser=calling_user;
         //We COULD read the verb every time, but I choose to keep the verb in memory
@@ -50,6 +50,7 @@ public class TrailBlazer {
                 this.br = this.setReader(startPath,"gameworld.trail");
                 this.filePath=startPath;
                 this.parsePark();
+                return;
             } catch (Exception e) {
                 //We don't handle this very well - we should probably log failures of communication, at least
             }
@@ -62,7 +63,8 @@ public class TrailBlazer {
         if (calling_user != null) {
             try {
                 //this.br = new BufferedReader(new FileReader(startPath+"trailhead.trail"));
-                this.br = this.setReader(startPath,"trailhead.trail");
+                //this.br = this.setReader(startPath,"trailhead.trail");
+                this.br=this.setReader(startPath,instructions);
                 this.filePath=startPath;
                 my_blazes=TrailBlazes.CONTINUE;
                 this.Parse();
@@ -90,6 +92,7 @@ public class TrailBlazer {
     }
 
     private boolean readVerbFile(BufferedReader myFile) {
+        System.out.println("Reading from the readVerbFile routine");
         if (this.advance(myFile)== false){
             my_blazes=TrailBlazes.INVALID;
             return true;
@@ -98,8 +101,9 @@ public class TrailBlazer {
         try {
             st=myFile.readLine();
             String command = this.extractTag(st, '*','*');
-
+            
             if (command.equals("DISPLAYNAME")){
+                SerializeJSON.addLog("DISPLAYNAME is being read");
                 st=myFile.readLine();
                 if (myFile.readLine().equals("---")){ myVerb.setDisplayName(st);SerializeJSON.addLog("adding display name: " + st);}
                 else throw new Exception("Problem in Displayname");
@@ -131,16 +135,48 @@ public class TrailBlazer {
             }
 
             if (command.equals("TARGETPATH")){
+                SerializeJSON.addLog("TARGETPATH is being read");
                 st=myFile.readLine();
-                if (myFile.readLine().equals("---")) myVerb.addTargetPath(st);
+                if (myFile.readLine().equals("---")){ myVerb.addTargetPath(st);
+                SerializeJSON.addLog("Adding target path " + st);}
                 else throw new Exception("Problem in *TARGETPATH*");
             }
 
             if (command.equals("CALLERPATH")){
+                SerializeJSON.addLog("CALLERPATH is being read");
                 st=myFile.readLine();
                 if (myFile.readLine().equals("---")) myVerb.addCallerPath(st);
                 else throw new Exception("Problem in *CALLERPATHPATH*");
             }
+
+            if (command.equals("COPYTOTARGET")) {
+                //    public void addCopyAttribute(verbTarget mySource, String attributeName, String copyName){
+                //st=myFile.readLine();
+                SerializeJSON.addLog("COPTYTOTARGET is being read");
+                String sourceName=this.extractTag(myFile.readLine(),'[',']');
+                String destinationName=this.extractTag(myFile.readLine(),'[',']');
+                if (myFile.readLine().equals("---")){
+                    myVerb.addCopyAttributetoTarget(sourceName,destinationName);
+                }else throw new Exception("Problem in COPYTOTARGET");               
+            }
+
+            if (command.equals("COPYTOCALLER")) {
+                SerializeJSON.addLog("COPTYTOCALLER is being read");
+                String sourceName=this.extractTag(myFile.readLine(),'[',']');
+                String destinationName=this.extractTag(myFile.readLine(),'[',']');
+                if (myFile.readLine().equals("---")){
+                    myVerb.addCopyAttributetoCaller(sourceName,destinationName); //Only difference between copytocaller
+                }else throw new Exception("Problem in COPYTOTARGET");               
+            }
+/*
+            if (command.equals("COPYTOCALLER")) {
+                String sourceName=this.extractTag(myFile.readLine(),'[',']');
+                String destinationName=this.extractTag(myFile.readLine(),'[',']');
+                if (myFile.readLine().equals("---")){
+                    myVerb.addCopyAttributetoCaller(sourceName,destinationName);//only difference between copytotarget
+                }else throw new Exception("Problem in COPYTOCALLER");               
+            }
+*/
             SerializeJSON.addLog("We are returning true.");
             return true;
         } catch (Exception e) {
@@ -149,6 +185,35 @@ public class TrailBlazer {
             return false;
         }
         
+    }
+    
+    private String extractMultipleTags(String parseObject, char startTag, char endTag) throws Exception { //Tested working although nothing calls it yet
+        int startCount=0;
+        int endCount=0;
+        int[] startArray= new int[1000];
+        int[] endArray=new int[1000];
+        String returnString="";
+
+        for (int i = 0; i < parseObject.length(); i++) {
+            if (parseObject.charAt(i)==startTag){
+                startArray[startCount]=i; // Stores all of the places where a tag starts
+                startCount++;
+            }
+            if (parseObject.charAt(i)==endTag){
+                endArray[endCount]=i;
+                endCount++;
+            }
+            if (endCount-2==startCount) throw new Exception("Too many " + endTag + " instances found"); //This code makes it so only one [] pair is ever allowed.
+            if (startCount-2==endCount) throw new Exception("Too many " + startTag + " instances found");//In other words, you cannot nest tags in this language
+        }
+        if (endCount!=startCount) throw new Exception("Unclosed tags or extranous characters detected");
+        if (endCount==0) throw new Exception("No tags detected"); //return parseObject, which would allow to simply write references with not tags at all
+        for (int z=0;z<endCount;z++){
+            //Name = parseObject.substring(parseObject.indexOf('[',look)+1,parseObject.indexOf(']',look));
+            //this.extractTag(parseObject.substring(startArray[z]+1,endArray[z]),,startTag,endTag)
+            returnString+=(parseObject.substring(startArray[z]+1,endArray[z]));
+        }
+        return returnString;
     }
 
     private BufferedReader setReader(String startPath, String startFile) throws IOException {

@@ -1,6 +1,6 @@
 package mypackage;
 
-public class Attribute {
+public class Attribute implements Cloneable {
     private String myType;
     private String myName;
     public String myData;
@@ -45,4 +45,14 @@ public class Attribute {
     public int getintData() {
         return this.myintData;
     }
+
+    public void setName(String Name) { //This function only exists to make it easier to verbs to transfer names from file to file
+        this.myName=Name;
+    }
+
+    public Object clone() throws
+                       CloneNotSupportedException 
+        { 
+            return super.clone(); 
+        } 
 }

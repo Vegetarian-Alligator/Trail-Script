@@ -15,12 +15,13 @@ enum verbTarget {
 
 
 abstract class action {
-    public action nextItem;//Kind of like a linked list
+    protected action nextItem;//Kind of like a linked list
     verbTarget receipient;
-    private User myCaller; //An action should never be operating on both the caller and the seller, however this is easy
-    private User myTarget; //Because it can simply choose the next
+    protected User myCaller; //An action should never be operating on both the caller and the seller, however this is easy
+    protected User myTarget; //Because it can simply choose the next
 
     action(verbTarget atarget) {//,myCaller,myTarget) {
+      //action() {
         this.receipient=atarget;
         nextItem=null;
         //this.myCaller=myCaller;
@@ -60,7 +61,50 @@ class Path extends action {
         this.fileName=fileName;
     }
     protected boolean execute(){
+        if (this.receipient==verbTarget.TARGET) { //The path is to be followed by the user
+            myTarget.executeVerb(this.fileName);
+            return true;
+        }
+
+        if (this.receipient==verbTarget.SELF){
+            myCaller.executeVerb(this.fileName);
+        } 
         return false;
+    }
+}
+
+class copyAttribute extends action {
+    private String attributeName;
+    private String copyName;
+    copyAttribute(verbTarget atarget, String attributeName,String copyName){
+        super(atarget);
+        this.attributeName=attributeName;
+        this.copyName=copyName;
+    }
+
+    protected boolean execute() {
+        User destination=null; //Null only to avoid initilization errors
+        User source=null;
+        if (receipient==verbTarget.SELF){ //The caller is getting data from the USER
+            destination=this.myCaller;
+            source=this.myTarget;
+        }
+
+        if (receipient==verbTarget.TARGET) {//The target is getting data from the caller
+            destination=this.myTarget;
+            source=this.myCaller;
+        }
+
+        if (destination==null || source==null) return false;
+
+        Attribute data=null;
+        data=source.returnAttribute(this.attributeName);
+        if (data==null) return false;
+        try {data=(Attribute)data.clone();}catch(Exception e){SerializeJSON.addLog("cloning failure");return false;}//why is this cast required?
+//          data=(Attribute)((Attribute)test).clone();  What might this ever do?
+        data.setName(this.copyName);
+        destination.setAttribute(data);
+        return true;
     }
 }
 
@@ -138,13 +182,35 @@ public class Verb {
         }
     }
 
+    public void executefirst(User target) { //Just for testing
+        myInstructions.get(0).setTarget(target);
+        myInstructions.get(0).execute();
+    }
+
+    public void execute(User target, User caller) {
+        SerializeJSON.addLog("A verb is executing: " + this.displayName);
+        SerializeJSON.addLog("There are " + myInstructions.size() + "instructions in this verb");
+        for (int i=0;i<myInstructions.size();i++){
+            myInstructions.get(i).setTarget(target);
+            myInstructions.get(i).setCaller(caller);
+            myInstructions.get(i).execute();
+        }
+    }
+
+    public void addCopyAttributetoTarget(String attributeName, String copyName) {
+        addCopyAttribute(verbTarget.TARGET,attributeName,copyName);
+    }
+
+    public void addCopyAttributetoCaller(String attributeName, String copyName) {
+        addCopyAttribute(verbTarget.SELF,attributeName,copyName);
+    }
+
+    private void addCopyAttribute(verbTarget mySource, String attributeName, String copyName){
+        myInstructions.add(new copyAttribute(mySource,attributeName, copyName));
+    }
+
     public void addTargetPath(String path){
-
-          //myInstructions.add(path);
-          listCount+=1;
-          
-
-
+          myInstructions.add(new Path(verbTarget.TARGET,path));
     }
 
 
@@ -153,19 +219,12 @@ public class Verb {
         listCount+=1;
     }
     public void addCallerPath(String path) {
-        /*SerializeJSON.addLog("adding a caller path");
-        action targetAction=getLastAction();
-        targetAction=new Path(verbTarget.SELF,path);
-        currentAction=targetAction;*/
+        myInstructions.add(new Path(verbTarget.SELF,path));
     }
 
     //createList assembles the list of verbs that a user may go through
     //It also determines which users it may apply them to as well
     public void createList(User user, Map<String, User> Users) {
 
-    }
-
-    public void execute(User myTarget, User myCaller) {
-        
     }
 }

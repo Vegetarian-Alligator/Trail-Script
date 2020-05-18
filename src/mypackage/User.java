@@ -34,7 +34,7 @@ public class User { // implements Runnable {
         this.session=my_session;
         this.in_public_chat=true;
         String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
-        myTrail=new TrailBlazer(rootdir,this,null,null);
+        myTrail=new TrailBlazer(rootdir,this,null,null,"trailhead.trail");
     }
 
     public void setChatName(String myNewChatName) {
@@ -69,6 +69,16 @@ public class User { // implements Runnable {
         String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";        
         //TrailBlazer verbTrail=new TrailBlazer(
         return false;
+    }
+
+    public boolean executeVerb (String instructions){
+        synchronized (this){ //This may not allow for multiple verbs at once, but let's just get this working.  Can this even be called multiple times?
+            TrailBlazer oldBlazer=this.myTrail;
+            String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
+            this.myTrail=new TrailBlazer(rootdir,this,null,null,instructions);
+            this.myTrail=oldBlazer;
+        }
+        return true;
     }
 
     public void verbTrail(Verb verbReference) {
@@ -238,15 +248,15 @@ public class User { // implements Runnable {
             if (type==Message.VERB_UPDATE) {
                 //eligiblePlayers.add(0,message);
                 tempcount+=1;
-                String listy=new String();
+                //String listy=new String();
                 List<String> targetList=new ArrayList<String>();
 //                targetList.add(0,message);
-                targetList.add(message);
-                for (String nextUser : myPark.playersToNames()){
-                    listy+=nextUser;
-                    targetList.add(nextUser);
-                }
-                this.session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","There has been an update from the verb processing.  Targets: " + listy));
+                targetList.add(message); //message must be the name of the verb
+                //for (String nextUser : myPark.playersToNames()){
+                //    listy+=nextUser;
+                //    targetList.add(nextUser);
+                //}
+                //this.session.getBasicRemote().sendText(SerializeJSON.Serialize("chat","There has been an update from the verb processing.  Targets: " + listy));
                 this.session.getBasicRemote().sendText(SerializeJSON.Serialize("verb",targetList));
             }
         } catch (Exception e) {
