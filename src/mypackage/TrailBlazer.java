@@ -357,7 +357,7 @@ public class TrailBlazer {
         int result;
         try {
             result = Integer.parseInt(parseObject);
-            //myUser.send_message("Trying to parse that int on + " + parseObject,"Server",Message.CHAT);
+            //myUser.send_message("Trying to parse that int on + " + parseObject + "name was: " + attrName,"Server",Message.CHAT);
             return new Attribute("Numeric",attrName,null,result,result); //Type conversions
         } catch (NumberFormatException nfe) {
             return new Attribute("Text",attrName,parseObject,0,0);
@@ -453,8 +453,9 @@ public class TrailBlazer {
                     }
                 } catch (Exception e) { //For security reasons it might be wise to check WHICH error we have - we just assign the variable
                     attrData=br.readLine();
+                    attrData=this.composeAttributeList(this.parseBracket(attrData),false);
                     Attribute createAttr;
-                    myUser.send_message(" No tags foundattrName: " + attrName + " attrData: " + attrData,"Server",Message.CHAT);
+                    //myUser.send_message(" No tags foundattrName: " + attrName + " attrData: " + attrData,"Server",Message.CHAT);
                     createAttr=this.dataToAttribute(attrName,attrData);
                     myUser.setAttribute(createAttr);
                     String Choice=br.readLine();
@@ -563,6 +564,23 @@ public class TrailBlazer {
                     my_blazes=TrailBlazes.CONTINUE;
                     return; //We do not have to read the last --- until we implement true returning branches
                 }
+
+                int firstParameter;
+                int secondParameter;
+                if (first.getType().equals("Text")) throw new Exception("Non-equality comparisons must be numeric (so far)");
+                else firstParameter=first.getintData();
+                if (second.getType().equals("Text")) throw new Exception("Non-equality comparisons must be numeric (so far)");
+                else secondParameter=second.getintData();
+
+                if (operator.equals(">")){
+                    if (firstParameter>secondParameter){
+                        try {br=setReader(filePath, trueResult);}
+                        catch (Exception e) {throw new IOException("Problem in if block " + e.toString());}
+                    } else {
+                        try {br=setReader(filePath, falseResult);}
+                        catch (Exception e) {throw new IOException("Problem in if block " + e.toString());}
+                    }
+            }
             }
 
             if (command.equals("GOTO")) {
@@ -575,17 +593,25 @@ public class TrailBlazer {
                 st=br.readLine();
                 if (br.readLine().equals("---")) {
                     //<img src="smiley.gif" alt="Smiley face" width="42" height="42">
-                    myUser.send_message("we found a picture","Server",Message.CHAT);
-                    myUser.send_message(st,"Server",Message.HTML_IMAGE);
+                    String result=null;
+                    try{
+                        String myResult=this.composeAttributeList(this.parseBracket(st),false);
+                        myUser.send_message(myResult,"Server",Message.HTML_IMAGE);
+                    }catch (Exception e){
+                        myUser.send_message("Something went wrong with the HTML parser.  "+e.toString(),"Server",Message.CHAT);
+                        myUser.send_message(st,"Server",Message.HTML_IMAGE);
+                    }                    
+                    //myUser.send_message("we found a picture","Server",Message.CHAT);
+                    //myUser.send_message(st,"Server",Message.HTML_IMAGE);
                 }
-                else throw new Exception("Problem in the picture file");
+                else throw new Exception("Problem in the picture block");
             }
 
             if (command.equals("RANDOM")) {
                 myUser.send_message("beggining random","Server",Message.CHAT);
                 Attribute bottom = this.parseBracket(br.readLine()).get(0); //This is the problem!!  Prasebracket is not appropriate
                 Attribute top    = this.parseBracket(br.readLine()).get(0);
-                myUser.send_message("we have parsed top and bottom numbers","Server",Message.CHAT);
+                //myUser.send_message("we have parsed top and bottom numbers","Server",Message.CHAT);
                 if (top.getType()!="Numeric" || bottom.getType()!="Numeric") throw new Exception("Something is wrong with a random number");
                 Attribute set=this.parseBracket(br.readLine()).get(0);
                 Random rand = new Random();
@@ -593,6 +619,7 @@ public class TrailBlazer {
 //              private Attribute dataToAttribute(String attrName, String parseObject) {
                 if (br.readLine().equals("---")) myUser.setAttribute(dataToAttribute(set.getName(),Integer.toString(result))); //....This is comically inefficient
                 else throw new Exception("Syntax Error");
+                myUser.send_message("result was: "+Integer.toString(result),"Server",Message.CHAT);
             }
 
         } catch(Exception e) { //If this happens, we may have a simple end of file.
