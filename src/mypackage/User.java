@@ -37,6 +37,17 @@ public class User { // implements Runnable {
         myTrail=new TrailBlazer(rootdir,this,null,null,"trailhead.trail");
     }
 
+//myUser.broadcast(attrName, value,st,Message.CHAT);
+//myUser.broadcast(st, Message.CHAT);
+
+    public void broadcast (String attrName, String value, String message, Message type){
+        myPark.broadcast(attrName, value, message, type);
+    }
+
+    public void broadcast (String message, Message type){
+        myPark.broadcast(message,type);
+    }
+
     public void setChatName(String myNewChatName) {
         this.chatName=myNewChatName;
     }

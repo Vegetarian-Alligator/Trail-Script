@@ -20,9 +20,10 @@ public class Park {
     private TrailBlazer readVerbs;
     private List<Verb> myVerbs=new ArrayList<Verb>();
     private List<User> eligiblePlayers=new ArrayList<User>(); //Not sure I need to declare this
+    HashMap<String, String> bannedattributes = new HashMap<String, String>();
 
     Park(String myName) { //"Park" creates the universe where any given game exists in.  I imagine each game should have only one "park" class
-        SerializeJSON.addLog("LoadWorld");
+        //SerializeJSON.addLog("LoadWorld");
         this.myName=myName;
         String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
         SerializeJSON.initilizeLogger();
@@ -47,6 +48,10 @@ public class Park {
             if (name.toLowerCase().equals(list.toLowerCase()))return index;
             index++;
         }
+        
+        for (String key : bannedattributes.keySet()) {
+            if (key.equals(name)) return -2;
+        }
         return -1;
     }
 
@@ -70,6 +75,11 @@ public class Park {
         synchronized (Users) {Users.remove(uniqueID);}
     }
 
+    public void setBannedContent(String name, String value){
+        bannedattributes.put(name,value);
+        SerializeJSON.addLog("banning " + value +" in " + name);
+    }
+
     private boolean subsearch(String name,String input) {
         /*If, however, the thing is in the list of unique attributes we have to check every player
         on the map for first having this attribute, then seeing what it is*/
@@ -84,6 +94,12 @@ public class Park {
                 }
             }
         }
+
+        for (String key : bannedattributes.keySet()) {
+            if (key.equals(name)){
+                if (input.contains(bannedattributes.get(name).toLowerCase())) return false;
+            }
+        }   
         return true;
     }
 
@@ -153,6 +169,7 @@ public class Park {
                     //if (Users.get(key).returnAttribute("name").getData().equals(target)) {
                     if (myAttribute!=null)
                        if (myAttribute.getData() != null) SerializeJSON.addLog("User: "+myAttribute.getData());
+                        if (target!=null) //In case someone enters nothing before an '!' sign                        
                         if (myAttribute.getData().equals(target)) {
                             targetUser=Users.get(key);
                         }
@@ -162,7 +179,6 @@ public class Park {
                 if (targetUser!=null) {
                     SerializeJSON.addLog("Target User is not Null");
 //                    Users.get(session.getId()).send_message("targetUser is not NULL; name of verb: "+myVerbs.get(0).getName(),"Server", Message.CHAT);
-
                     for (Verb vKey : myVerbs) { //Now check to make sure that the requested verb.. actually is a verb
                         SerializeJSON.addLog("Name of verb: " + vKey.getName());
                         if (vKey.getName().equals(verbName)) {
@@ -176,6 +192,37 @@ public class Park {
                     verbVerb.execute(targetUser,Users.get(session.getId()));
                 } else SerializeJSON.addLog("No verb found");
 
+            }
+        }
+    }
+//myUser.broadcast(attrName, value,st,Message.CHAT);
+//myUser.broadcast(st, Message.CHAT);
+
+    public void broadcast(String attrName,String value,String message, Message type){
+        if (type==Message.CHAT) {
+            for (String key : Users.keySet()){
+                //Users.get(key).send_message(message,"a user",type); //Send everybody the message
+                Attribute checker;
+                checker=Users.get(key).returnAttribute(attrName);
+                if (checker!=null){
+                    String myValue=null;                    
+                    if (checker.getType().equals("Numeric")){
+                        myValue=Integer.toString(checker.getintData());
+                    } else myValue=checker.getData();
+                if (myValue!=null)                
+                if (myValue.equals(value)){
+                    Users.get(key).send_message(message,"a user",type); //Send everybody the message
+                }
+                }
+            }
+        }
+    }
+
+
+    public void broadcast(String message, Message type){
+        if (type==Message.CHAT) {
+            for (String key : Users.keySet()){
+                Users.get(key).send_message(message,"a user",type); //Send everybody the message
             }
         }
     }

@@ -4,5 +4,6 @@ public enum Message{
     RAW,
     CHAT,
     COMMAND,
-    HTML_IMAGE
+    HTML_IMAGE,
+    VERB_UPDATE
 }

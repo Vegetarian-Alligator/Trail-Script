@@ -46,12 +46,15 @@ public class TrailBlazer {
 
         if (calling_park !=null) { //It is important this if statement is first: just in case we want to allow the world (park) itself to play someday, it is set up before playing
             try {
+                SerializeJSON.addLog("Loading the world");
                 this.myPark=calling_park;
                 this.br = this.setReader(startPath,"gameworld.trail");
+                my_blazes=TrailBlazes.CONTINUE;
                 this.filePath=startPath;
                 this.parsePark();
                 return;
             } catch (Exception e) {
+                SerializeJSON.addLog("CANNOT LOAD THE WORLD!"+e.toString());
                 //We don't handle this very well - we should probably log failures of communication, at least
             }
         }
@@ -245,15 +248,34 @@ public class TrailBlazer {
         return true;
     }
 
-    public void parsePark() {
+    public void parsePark(){
+        while (my_blazes==TrailBlazes.CONTINUE) {
+            this.readGameWorld();
+        }
+    }
+
+    public void readGameWorld() {
         try {
             String st;
-            if (!this.advance(br)) return;
+            if (!this.advance(br)){
+                my_blazes=TrailBlazes.INVALID;
+                return;
+            }
             st=this.br.readLine();
             String command = this.extractTag(st, '*','*');
             if (command.equals("UNIQUE")) {
+                SerializeJSON.addLog("worldloading: parsing a UNIQUE");
                 st=br.readLine();
                 if (br.readLine().equals("---")) this.myPark.setUniqueAttribute(st); //all the lower case handling is inside of
+                else throw new Exception("Cannot read UNIQUE in gameworld");
+            }
+
+            if (command.equals("BANNEDCONTENT")) {
+                SerializeJSON.addLog("worldloading: parsing a BANNEDCONTENT");
+                String name=br.readLine();
+                String value=br.readLine();
+                if (br.readLine().equals("---")) this.myPark.setBannedContent(name,value);
+                else throw new Exception("cannot read BANNEDCONTENT in gameworld");
             }
 
 
@@ -447,7 +469,6 @@ public class TrailBlazer {
                             attrData=br.readLine();
                         }
                         myUser.askQuestion(attrName,"Please enter an answer for " + attrName,true,Options);
-
                         my_blazes=TrailBlazes.INQUIRE;
                         return;
                     }
@@ -619,9 +640,44 @@ public class TrailBlazer {
 //              private Attribute dataToAttribute(String attrName, String parseObject) {
                 if (br.readLine().equals("---")) myUser.setAttribute(dataToAttribute(set.getName(),Integer.toString(result))); //....This is comically inefficient
                 else throw new Exception("Syntax Error");
-                myUser.send_message("result was: "+Integer.toString(result),"Server",Message.CHAT);
+                myUser.send_message("commandblock result was: "+Integer.toString(result)+"bottom: "+Integer.toString(bottom.getintData())+"top: "+Integer.toString(top.getintData()),"Server",Message.CHAT);
+                return;
             }
+            /*
+            *BROADCAST*
+            *ALL* or ATTRIBUTE
+            If Attribute:
+            name
+            value
+            *CHAT*
+            message
+            */
+//myUser.broadcast(attrName, value,st,Message.CHAT);
+//myUser.broadcast(st, Message.CHAT);
 
+            if (command.equals("BROADCAST")){
+                st = br.readLine();
+                if (st.equals("*ALL*")){
+                    st = br.readLine();
+                    if (st.equals("*CHAT*")){
+                        st=composeAttributeList(this.parseBracket(br.readLine()),false);
+                        if (this.br.readLine().equals("---")) myUser.broadcast(st, Message.CHAT);
+                        else throw new Exception("Problem in BROADCAST");
+                    }
+                }else { //instead of *ALL* we have attribute
+                    SerializeJSON.addLog("Starting a private broadcast");
+                    String attrName=composeAttributeList(this.parseBracket(st),false);
+                    SerializeJSON.addLog("attrName: " + attrName);
+                    String value=composeAttributeList(this.parseBracket(br.readLine()),false);
+                    SerializeJSON.addLog("value: " + value);
+                    if (br.readLine().equals("*CHAT*")){
+                        SerializeJSON.addLog("entering *chat*");
+                        st=composeAttributeList(this.parseBracket(br.readLine()),false);
+                        if (this.br.readLine().equals("---")) myUser.broadcast(attrName, value,st,Message.CHAT);
+                        else throw new Exception("Problem in BROADCAST");
+                    }
+                }
+            }
         } catch(Exception e) { //If this happens, we may have a simple end of file.
             my_blazes=TrailBlazes.INVALID;
             myUser.send_message("Unkown Exception has occured "+ e.toString(),"Server",Message.CHAT);

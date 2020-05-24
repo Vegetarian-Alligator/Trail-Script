@@ -18,7 +18,7 @@ public static void initilizeLogger(){
 }
 
 public static void addLog(String info) {
-    LOGGER.info("SerializeJSON logging:" + info);
+    LOGGER.severe("SerializeJSON logging:" + info);
 }
 
 public static void log(String input) {
@@ -47,6 +47,7 @@ public static String Serialize(String type, List<String> data) throws RuntimeExc
             first=false;
     }
     output+="]}";
+    SerializeJSON.addLog("The data being sent to the user is: " + output);
     return output;
 }
 

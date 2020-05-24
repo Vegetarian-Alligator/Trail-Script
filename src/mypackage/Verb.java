@@ -12,8 +12,6 @@ enum verbTarget {
     IRR      //This action means that it doesn't matter who is the target
 }
 
-
-
 abstract class action {
     protected action nextItem;//Kind of like a linked list
     verbTarget receipient;
@@ -107,9 +105,6 @@ class copyAttribute extends action {
         return true;
     }
 }
-
- 
-
 
 class verbAttribute {
     private String Name;
