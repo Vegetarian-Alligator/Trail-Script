@@ -8,8 +8,9 @@ public class User { // implements Runnable {
     private Session session; //Doubt we need the static keyword, I will doublecheck
     public boolean in_public_chat;
     private boolean ask;
-    String Waiting;
+    //String waiting;
     private TrailBlazer myTrail;
+    private TrailBlazer baseTrail;
     private TrailBlazer myVerbTrail;
     List<Attribute> myAttributes=new ArrayList<Attribute>();
     List<String> attrChoice;
@@ -30,11 +31,15 @@ public class User { // implements Runnable {
         this.name=name;
         this.chatName=name;
         ask=false;
-        Waiting=null;
         this.session=my_session;
         this.in_public_chat=true;
         String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
         myTrail=new TrailBlazer(rootdir,this,null,null,"trailhead.trail");
+        baseTrail=myTrail;
+        if (myTrail==null) SerializeJSON.addLog("Mytrail is null within User initilization");
+        else SerializeJSON.addLog("Mytrail is not null within User INitilization");
+        myTrail.startUser();
+        //myTrail.waiting="";
     }
 
 //myUser.broadcast(attrName, value,st,Message.CHAT);
@@ -84,12 +89,24 @@ public class User { // implements Runnable {
 
     public boolean executeVerb (String instructions){
         synchronized (this){ //This may not allow for multiple verbs at once, but let's just get this working.  Can this even be called multiple times?
+            //The verb itself should handle limitatations on execution...
             TrailBlazer oldBlazer=this.myTrail;
             String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
             this.myTrail=new TrailBlazer(rootdir,this,null,null,instructions);
-            this.myTrail=oldBlazer;
+            myTrail.startUser();
+            if (myTrail==null) SerializeJSON.addLog("Mytrail is null within executeVerb");
+            //this.myTrail=oldBlazer; //This line of code happens much too quickly.
         }
         return true;
+    }
+
+    public void doneVerb(){
+        this.myTrail=baseTrail;
+        if (myTrail!= null)
+        if  (myTrail.waiting != null) { //HOw can this be a null pointer error?  I access no properties of myTrail.waiting
+            myTrail.sendLastQuestion();
+        }
+        this.Refresh();
     }
 
     public void verbTrail(Verb verbReference) {
@@ -105,16 +122,16 @@ public class User { // implements Runnable {
         }
 
         if (ask) { //Type should equal "COMMAND" at this point; this "ask" statement must be removed in order for unprompted commands to happen
-            if (myPark.uniqueAttributeAllowed(Waiting,message)) {
+            if (myPark.uniqueAttributeAllowed(myTrail.waiting,message)) {
                 if (attrChoice==null) {
                     try {
-                        this.setAttribute("Numeric",Waiting,null,Integer.parseInt(message),0);
-                        //this.send_message(" Numeric message sent: "+Waiting+":"+message,"Server",Message.CHAT);
+                        this.setAttribute("Numeric",myTrail.waiting,null,Integer.parseInt(message),0);
+                        //this.send_message(" Numeric message sent: "+myTrail.waiting+":"+message,"Server",Message.CHAT);
                     } catch (Exception e) {
-                        this.setAttribute("Text",Waiting,message,0,0);
-                        //this.send_message(" Text message sent " + Waiting+":"+message,"Server",Message.CHAT);
+                        this.setAttribute("Text",myTrail.waiting,message,0,0);
+                        //this.send_message(" Text message sent " + myTrail.waiting+":"+message,"Server",Message.CHAT);
                     }
-                    Waiting=null;
+                    myTrail.waiting=null;
                     ask=false;
                     //this.send_message("Thank you for setting the attribute","Server",Message.CHAT);
                     myTrail.my_blazes=TrailBlazes.CONTINUE;
@@ -126,12 +143,12 @@ public class User { // implements Runnable {
                     //this.send_message("Attribute Choice: "+key,"Server",Message.CHAT);
                     if (key.equals(message)) {
                         try {
-                            this.setAttribute("Numeric",Waiting,null,Integer.parseInt(message),0);
+                            this.setAttribute("Numeric",myTrail.waiting,null,Integer.parseInt(message),0);
 
                         } catch (Exception e) {
-                            this.setAttribute("Text",Waiting,message,0,0);
+                            this.setAttribute("Text",myTrail.waiting,message,0,0);
                         }
-                        Waiting=null;
+                        myTrail.waiting=null;
                         ask=false;
                         attrChoice=null;
                         //this.send_message("Thank you for setting the attribute","Server",Message.CHAT);
@@ -143,7 +160,7 @@ public class User { // implements Runnable {
                 return false;
             } else {
                 this.send_message("It appears that someone else has already chosen that.  Can you try a different one?","Server",Message.CHAT);
-                this.askQuestion(Waiting,lastQuestion,lastNumeric,lastOptions);
+                this.askQuestion(myTrail.waiting,lastQuestion,lastNumeric,lastOptions);
                 return false;
             }
         }
@@ -156,11 +173,20 @@ public class User { // implements Runnable {
     public boolean askQuestion(String attrName,String Question,boolean isNumeric,List<String> Options) {
         if (!AI) {
             //this.send_message("We are in the ask question subroutine","Server",Message.CHAT);
+            SerializeJSON.addLog("Entering the Question");
             ask=true;
+            SerializeJSON.addLog("ask=true");
             this.lastQuestion=Question;
+            //SerializeJSON.addLog("this.lastQuestion=Question");
             this.lastNumeric=isNumeric;
+            //SerializeJSON.addLog("this.lastNumeric=isNumeric;");
             this.lastOptions= Options;
-            Waiting=attrName;
+            //SerializeJSON.addLog("this.lastOptions= Options;");
+            if (attrName==null) SerializeJSON.addLog("The name is null");
+            if (myTrail==null) SerializeJSON.addLog("Mytrail is null!");
+            myTrail.waiting=attrName;
+            //SerializeJSON.addLog("myTrail.waiting=attrName;");
+            SerializeJSON.addLog("Question data has been stored.");
             if (Options==null) {
                 this.send_message(Question,"Server",Message.COMMAND);
                 return ask;
@@ -170,6 +196,7 @@ public class User { // implements Runnable {
             //Should really be done with a "Print" Command, and collection of the data should be silent
 
             this.attrChoice=Options;
+            SerializeJSON.addLog("Now sending message with commands....");
             this.send_message(Question,"Server",Message.COMMAND);
             return ask;
         }

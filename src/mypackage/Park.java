@@ -8,8 +8,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import javax.websocket.Session;
 
-
-
 public class Park {
 //Everything here should be private since this class is essentially the overlord of any given game: nothing external should be manipulating it
     private Map<String, User> Users = new ConcurrentHashMap<>();//static final?
@@ -29,13 +27,12 @@ public class Park {
         SerializeJSON.initilizeLogger();
         SerializeJSON.addLog("This should be in the log for sure.");
         this.myBlazes=new TrailBlazer(rootdir,null,this,null,null); //This initilizes the world
-        new Verb();
         try {
             //myVerbs.add(new Verb()); //Hacky placeholder, but let's debug this thing..
         } catch (Exception e) {
             SerializeJSON.addLog("This is what was making .add puke: " + e.toString());
         }
-        Verb booleanVerb=new Verb();
+        //Verb booleanVerb=new Verb();
         readVerbs=new TrailBlazer(rootdir,null,null,myVerbs,null);
         myVerbs=readVerbs.returnVerbs();
         SerializeJSON.addLog("Size of myVerbs: "+myVerbs.size());

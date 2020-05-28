@@ -65,6 +65,7 @@ class Path extends action {
         }
 
         if (this.receipient==verbTarget.SELF){
+            //Execute this in a new thread that basically just waits for the result to be returned
             myCaller.executeVerb(this.fileName);
         } 
         return false;
@@ -142,7 +143,7 @@ public class Verb {
     //Each type of action should have it's own class
 
     Verb () {
-        SerializeJSON.addLog("We are starting up a verb...");
+//        SerializeJSON.addLog("We are starting up a verb...");
         callerRequirements=new ArrayList<Attribute>();
         targetRequirements=new ArrayList<Attribute>();
         callerNegation=new ArrayList<Attribute>();
@@ -151,7 +152,7 @@ public class Verb {
         String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/"; //This needs to be a parameter, but it does not matter for now
         //myAction=null;
         //currentAction=null;
-        SerializeJSON.addLog("Verb has been completed");
+        SerializeJSON.addLog("Verb has been initilized");
         listCount=0;
 //        myBlazer=new TrailBlazer(rootdir,null,null,this);
     }
@@ -190,6 +191,8 @@ public class Verb {
             myInstructions.get(i).setCaller(caller);
             myInstructions.get(i).execute();
         }
+        //target.doneVerb();
+        //caller.doneVerb();
     }
 
     public void addCopyAttributetoTarget(String attributeName, String copyName) {

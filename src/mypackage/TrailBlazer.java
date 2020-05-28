@@ -7,14 +7,35 @@ import java.util.regex.Pattern;
 
 import java.util.*;
 
+//public boolean askQuestion(String attrName,String Question,boolean isNumeric,List<String> Options) {
+
+class storeQuestion{ //Okay this class is basically like a "struct" to hold information about the question
+    public String attrName;
+    public String Question;
+    public boolean isNumeric;
+    public List<String> Options;
+
+    storeQuestion(String attrName,String Question,boolean isNumeric,List<String> Options){
+        this.attrName=attrName;
+        this.Question=Question;
+        this.isNumeric=isNumeric;
+        this.Options=Options;
+    }
+}
+
 public class TrailBlazer {
     protected TrailBlazes my_blazes; //The status of this trail
     protected String Command;
     private String filePath;
     private BufferedReader br;
+    public boolean refresh=true;
+    storeQuestion myLastQuestion;
     User myUser;
     Park myPark;
     Verb myVerb;
+    public String waiting;
+
+    
     
     private List<Verb> myVerbs = new ArrayList<Verb>();
 
@@ -22,6 +43,7 @@ public class TrailBlazer {
         return myVerbs;
     }
     TrailBlazer (String startPath, User calling_user, Park calling_park, List<Verb> calling_verb,String instructions) { //Honestly, verb may as well have been a boolean at this point
+        waiting=new String("test");
         SerializeJSON.addLog("Blazing a trail!");
         myUser=calling_user;
         //We COULD read the verb every time, but I choose to keep the verb in memory
@@ -70,13 +92,18 @@ public class TrailBlazer {
                 this.br=this.setReader(startPath,instructions);
                 this.filePath=startPath;
                 my_blazes=TrailBlazes.CONTINUE;
-                this.Parse();
+                //this.Parse();
             } catch (IOException e) { //NoSuchElementException
                 //myUser.send_message("IO Exception has occured "+ e.toString(),"Server",Message.CHAT);
+                SerializeJSON.addLog("Error occured trying to create a user: " +e.toString());
             }
             //while ((st = br.readLine()) != null)
         }
 
+    }
+
+    public void startUser() {
+        this.Parse();
     }
 
     private void parseVerb() throws Exception {
@@ -87,6 +114,7 @@ public class TrailBlazer {
             myVerb = new Verb();            
             BufferedReader myFile;
             myFile= this.setReader(this.filePath,st);
+            if (myFile==null) SerializeJSON.addLog("File not found!");else SerializeJSON.addLog("myFile is not NULL");
             my_blazes=TrailBlazes.CONTINUE;
             while (my_blazes==TrailBlazes.CONTINUE)success=readVerbFile(myFile);
             if (success) myVerbs.add(myVerb);
@@ -112,7 +140,7 @@ public class TrailBlazer {
                 else throw new Exception("Problem in Displayname");
                 
             }
-
+            //DISPLAYNAME TARGETPATH CALLERPATH COPYTOTARGET COPYTOCALLER
             if (command.equals("SELF")){
                 if (myFile.readLine().equals("---"))myVerb.setSelf(true);
                 else throw new Exception("Problem in SELF");
@@ -189,6 +217,14 @@ public class TrailBlazer {
         }
         
     }
+    //    storeQuestion(String attrName,String Question,boolean isNumeric,List<String> Options){
+    private void sendQuestion(storeQuestion currentQuestion){
+        myUser.askQuestion(currentQuestion.attrName, currentQuestion.Question,currentQuestion.isNumeric,currentQuestion.Options);
+    }
+
+    public void sendLastQuestion(){
+        sendQuestion(myLastQuestion);
+    }
     
     private String extractMultipleTags(String parseObject, char startTag, char endTag) throws Exception { //Tested working although nothing calls it yet
         int startCount=0;
@@ -222,7 +258,6 @@ public class TrailBlazer {
     private BufferedReader setReader(String startPath, String startFile) throws IOException {
         return new BufferedReader(new FileReader(startPath+startFile)); // Returns instead of sets br in case we ever implement "return" branches
     }
-
 
     private boolean advance(BufferedReader thisBuffer) {
         String st;
@@ -287,10 +322,16 @@ public class TrailBlazer {
     }
 
     public void Parse() {
-        
+        //This code is meaningful because we DON'T know what state the world might be called in when this is executed
         while (my_blazes==TrailBlazes.CONTINUE) {
+            refresh=true;
             this.readNextCommand();
         }
+        if (my_blazes==TrailBlazes.INVALID && refresh){
+            refresh=false;
+            myUser.doneVerb();
+        }
+
         //try{myUser.send_message("IT seems we are done parsing with my_blazes="+my_blazes,"Server",Message.CHAT);
         //}catch (IOException ee) {}
     }
@@ -386,6 +427,44 @@ public class TrailBlazer {
         }
     }
 
+    public String returnResult(String object) throws Exception{
+        try {
+        int laststart=0;
+        int startcount=0;
+        int endcount=0;
+        for (int i=0; i<object.length(); i++){
+            if (object.charAt(i)=='[') {
+                laststart=i;
+                startcount++;
+            }
+
+            if (object.charAt(i)==']'){
+                if (startcount<endcount) throw new Exception("Bad startcount");
+                String prepend="";
+                String append="";
+                //String replace=mywords.get(object.substring(laststart+1,i));
+                String replace="";
+                SerializeJSON.addLog("The attribute about to be passed in is: " + object.substring(laststart+1,i));
+                Attribute replacement=myUser.returnAttribute(object.substring(laststart+1,i));
+                if (replacement.getType().equals("Text")) replace=replacement.getData();
+                    else replace=Integer.toString(replacement.getintData());
+                if (laststart!=0) prepend=object.substring(0,laststart);
+                if (i!= object.length()-1) append=object.substring(i+1,object.length());
+                object=prepend+replace+append;
+                startcount=0;
+                endcount=0;
+                laststart=0;
+                i=0;
+            }
+        }
+        SerializeJSON.addLog("The object about to be returned is: " + object);
+        return object;
+    } catch (Exception e) {
+        SerializeJSON.addLog("An exception has occured inside of returnResult: " + e.toString());
+        throw new Exception();
+    }
+}
+
     public void readNextCommand() {
         String st;
         if (!this.advance(br)) return;
@@ -424,9 +503,11 @@ public class TrailBlazer {
                     //myUser.send_message("Entering the print subroutine","Server",Message.CHAT);
                     st=this.br.readLine();
                     if (this.br.readLine().equals("---")) { //Send the message
-                        String myResult=this.composeAttributeList(this.parseBracket(st),false);
+                        //String myResult=this.composeAttributeList(this.parseBracket(st),false);
+                        String myResult=returnResult(st);
+                        if (myResult==null) throw new Exception("Result was null for some reason");
                         /*This needs to be given intermediary steps so that it can start to find world variables or other players variables*/
-                        myUser.send_message(myResult,"Server",Message.CHAT);
+                        if (myResult!=null) myUser.send_message(myResult,"Server",Message.CHAT); else throw new Exception("Myresult was null for some reason");
                         my_blazes=TrailBlazes.CONTINUE;
                         return;
                     }
@@ -446,18 +527,25 @@ public class TrailBlazer {
                 }
             }
 
-            if (command.equals("GET_ATTRIBUTE")) {
+            if (command.equals("SET")) {
+                SerializeJSON.addLog("Entering set Block");
                 String attrName;
                 String attrData;
                 attrName=br.readLine();
                 try { //If the first line does not generate an error, we need to ask the user what is up....
                     String aName;
                     //myUser.send_message(" Reading Tag " + attrName,"Server",Message.CHAT);
-                    aName=this.extractTag(attrName,'<','>'); //This will error if there are tags, going to the catch
+                    aName=this.extractTag(attrName,'<','>'); //This will error if there are no tags, going to the catch
+                    SerializeJSON.addLog("aName: " + aName);                    
                     attrName=aName; //Negates any risk of loosing the last readLine()
                     attrData=br.readLine();
                     if (attrData.equals("---")) {
+                    SerializeJSON.addLog("attrData is ---");                    
                         my_blazes=TrailBlazes.INQUIRE;
+                        myLastQuestion=new storeQuestion(attrName,"Please enter a value for " + attrName,false,null);
+                        SerializeJSON.addLog("storeQuestion has been saved with top block");
+                        SerializeJSON.addLog("compile test");
+                        //this.sendQuestion(myLastQuestion);
                         myUser.askQuestion(attrName,"Please enter a value for " + attrName,false,null);
                         return;
                     } else {
@@ -468,13 +556,21 @@ public class TrailBlazer {
                             if (attrData==null) myUser.send_message("Null result error.","Server",Message.CHAT);
                             attrData=br.readLine();
                         }
-                        myUser.askQuestion(attrName,"Please enter an answer for " + attrName,true,Options);
+                        myLastQuestion=new storeQuestion(attrName,"Please enter an answer for " + attrName,true,Options);
+                        SerializeJSON.addLog("storeQuestion has been saved with options");
+                        //this.sendQuestion(myLastQuestion);
+                        try {myUser.askQuestion(attrName,"Please enter an answer for " + attrName,true,Options);}
+                        catch (Exception e) {SerializeJSON.addLog("something went wrong iwth askQuestion."+e.toString());}
+                        SerializeJSON.addLog("askquestion has been saved with askquestions");
                         my_blazes=TrailBlazes.INQUIRE;
                         return;
                     }
                 } catch (Exception e) { //For security reasons it might be wise to check WHICH error we have - we just assign the variable
                     attrData=br.readLine();
-                    attrData=this.composeAttributeList(this.parseBracket(attrData),false);
+                    //attrName=composeAttributeList(this.parseBracket(attrName),false);
+                    attrName=returnResult(attrName);
+                    //attrData=this.composeAttributeList(this.parseBracket(attrData),false);
+                    attrData=returnResult(attrData);
                     Attribute createAttr;
                     //myUser.send_message(" No tags foundattrName: " + attrName + " attrData: " + attrData,"Server",Message.CHAT);
                     createAttr=this.dataToAttribute(attrName,attrData);
@@ -490,12 +586,21 @@ public class TrailBlazer {
             if (command.equals("CHATNAME")) {
                 st=this.br.readLine();
                 if (this.br.readLine().equals("---")) {
-                    String Result=this.composeAttributeList(this.parseBracket(st),false);
+                    //String Result=this.composeAttributeList(this.parseBracket(st),false);
+                    String Result=returnResult(st);
                     myUser.setChatName(Result);
                     my_blazes=TrailBlazes.CONTINUE;
                     return;
                 } else {throw new IOException("CHATNAME block contains invalid information or is malformed");}
             }
+
+            /*---
+            *SIMPLEMATH*
+            *ADD*
+            <zorkmids>
+            [zorkmids]
+            75
+            ---*/
 
             if (command.equals("SIMPLEMATH")) {
                 String next=br.readLine();
@@ -616,7 +721,8 @@ public class TrailBlazer {
                     //<img src="smiley.gif" alt="Smiley face" width="42" height="42">
                     String result=null;
                     try{
-                        String myResult=this.composeAttributeList(this.parseBracket(st),false);
+                        //String myResult=this.composeAttributeList(this.parseBracket(st),false);
+                        String myResult=returnResult(st);
                         myUser.send_message(myResult,"Server",Message.HTML_IMAGE);
                     }catch (Exception e){
                         myUser.send_message("Something went wrong with the HTML parser.  "+e.toString(),"Server",Message.CHAT);
@@ -660,27 +766,49 @@ public class TrailBlazer {
                 if (st.equals("*ALL*")){
                     st = br.readLine();
                     if (st.equals("*CHAT*")){
-                        st=composeAttributeList(this.parseBracket(br.readLine()),false);
+                        //st=composeAttributeList(this.parseBracket(br.readLine()),false);
+                        st=returnResult(br.readLine());
                         if (this.br.readLine().equals("---")) myUser.broadcast(st, Message.CHAT);
                         else throw new Exception("Problem in BROADCAST");
                     }
                 }else { //instead of *ALL* we have attribute
                     SerializeJSON.addLog("Starting a private broadcast");
-                    String attrName=composeAttributeList(this.parseBracket(st),false);
+//                    String attrName=composeAttributeList(this.parseBracket(st),false);
+                    String attrName=returnResult(st);
                     SerializeJSON.addLog("attrName: " + attrName);
-                    String value=composeAttributeList(this.parseBracket(br.readLine()),false);
+//                    String value=composeAttributeList(this.parseBracket(br.readLine()),false);
+                    String value=returnResult(br.readLine());
                     SerializeJSON.addLog("value: " + value);
                     if (br.readLine().equals("*CHAT*")){
                         SerializeJSON.addLog("entering *chat*");
-                        st=composeAttributeList(this.parseBracket(br.readLine()),false);
+//                        st=composeAttributeList(this.parseBracket(br.readLine()),false);
+                          st=returnResult(br.readLine());
                         if (this.br.readLine().equals("---")) myUser.broadcast(attrName, value,st,Message.CHAT);
                         else throw new Exception("Problem in BROADCAST");
                     }
                 }
             }
+
+            if (command.equals("SIDEPATH")){
+                SerializeJSON.addLog("We are not inside of the sidepath");
+//                String subroutine=composeAttributeList(this.parseBracket(br.readLine()),false);
+                  String subroutine=returnResult(br.readLine());
+                SerializeJSON.addLog("We are now going down: " + subroutine);
+                TrailBlazer sideTrail=null;
+                if (br.readLine().equals("---")) sideTrail=new TrailBlazer(this.filePath,myUser,null,null,subroutine);
+                if (sideTrail!=null && sideTrail.my_blazes==TrailBlazes.GAMEOVER)my_blazes=TrailBlazes.GAMEOVER;
+                
+            }
+
+            if (command.equals("GAMEOVER")){ //
+                my_blazes=TrailBlazes.GAMEOVER;
+            }
+
+
         } catch(Exception e) { //If this happens, we may have a simple end of file.
             my_blazes=TrailBlazes.INVALID;
-            myUser.send_message("Unkown Exception has occured "+ e.toString(),"Server",Message.CHAT);
+            SerializeJSON.addLog("Exception has occured while parsing"+ e.toString());
+            myUser.send_message("Exception has occured while parsing "+ e.toString(),"Server",Message.CHAT);
             return;
         }
     }
