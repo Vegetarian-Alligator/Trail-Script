@@ -23,7 +23,7 @@ public class Park {
     Park(String myName) { //"Park" creates the universe where any given game exists in.  I imagine each game should have only one "park" class
         //SerializeJSON.addLog("LoadWorld");
         this.myName=myName;
-        String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
+        String rootdir = SerializeJSON.getDir();
         SerializeJSON.initilizeLogger();
         SerializeJSON.addLog("This should be in the log for sure.");
         this.myBlazes=new TrailBlazer(rootdir,null,this,null,null); //This initilizes the world
@@ -194,6 +194,45 @@ public class Park {
     }
 //myUser.broadcast(attrName, value,st,Message.CHAT);
 //myUser.broadcast(st, Message.CHAT);
+
+    public void executeVerb(String target, String verbName, Session session ){
+                SerializeJSON.addLog("Name: " + target + " Verb: " + verbName);
+                User targetUser=null;
+                User callingUser;
+                Verb verbVerb=null;
+
+                for (String key : Users.keySet()) { //This one mostly just turns it into a list; could be integrated
+
+                    Attribute myAttribute=null;
+                    if (Users.get(key)!=null) myAttribute=Users.get(key).returnAttribute("name");
+                    else SerializeJSON.addLog("null Users.get(key) where key = " + key);
+                    //if (Users.get(key).returnAttribute("name").getData().equals(target)) {
+                    if (myAttribute!=null)
+                       if (myAttribute.getData() != null) SerializeJSON.addLog("User: "+myAttribute.getData());
+                        if (target!=null) //In case someone enters nothing before an '!' sign                        
+                        if (myAttribute.getData().equals(target)) {
+                            targetUser=Users.get(key);
+                        }
+                }
+//    public void send_message(String message, String sender, Message type) { //boolean public_message
+                SerializeJSON.addLog("assessing target user");
+                if (targetUser!=null) {
+                    SerializeJSON.addLog("Target User is not Null");
+//                    Users.get(session.getId()).send_message("targetUser is not NULL; name of verb: "+myVerbs.get(0).getName(),"Server", Message.CHAT);
+                    for (Verb vKey : myVerbs) { //Now check to make sure that the requested verb.. actually is a verb
+                        SerializeJSON.addLog("Name of verb: " + vKey.getName());
+                        if (vKey.getName().equals(verbName)) {
+                            verbVerb=vKey;
+                        }
+                    }
+                }
+
+                if (verbVerb != null) { //Its time to go execute this verb!
+                    SerializeJSON.addLog("assessing target user");
+                    verbVerb.execute(targetUser,Users.get(session.getId()));
+                } else SerializeJSON.addLog("No verb found");
+
+    }
 
     public void broadcast(String attrName,String value,String message, Message type){
         if (type==Message.CHAT) {

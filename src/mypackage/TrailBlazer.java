@@ -24,7 +24,7 @@ class storeQuestion{ //Okay this class is basically like a "struct" to hold info
 }
 
 public class TrailBlazer {
-    protected TrailBlazes my_blazes; //The status of this trail
+    public TrailBlazes my_blazes; //The status of this trail
     protected String Command;
     private String filePath;
     private BufferedReader br;
@@ -129,9 +129,10 @@ public class TrailBlazer {
             return true;
         }
         String st;
+        String command;
         try {
             st=myFile.readLine();
-            String command = this.extractTag(st, '*','*');
+            command = this.extractTag(st, '*','*');
             
             if (command.equals("DISPLAYNAME")){
                 SerializeJSON.addLog("DISPLAYNAME is being read");
@@ -151,16 +152,43 @@ public class TrailBlazer {
                 else throw new Exception("Problem in NOSELF");
             }   
 
-            if (command.equals("REQUIREMENT")){ //We don't parseBracket because we don't care about the actual value
-            //Also there IS not actual value if we are just setting up the verb
-                String name=this.extractTag(myFile.readLine(),'[',']'); 
+            if (command.equals("CALLERREQUIREMENT")){ //We don't parseBracket because we don't care about the actual value
+                String operation=myFile.readLine();
+                comparison myOperation;
+                if (operation.equals("*NOTEQUAL*")) myOperation=comparison.notequals;
+                else if (operation.equals("*GREATERTHAN*")) myOperation=comparison.greaterthan;
+                else if (operation.equals("*LESSTHAN*")) myOperation=comparison.lessthan;           
+                else if (operation.equals("*EQUALS*")) myOperation=comparison.equals;
+                else throw new Exception("An appropriate comparison was not found");
+                String name=myFile.readLine();//this.extractTag(myFile.readLine(),'[',']'); 
                 Attribute value=dataToAttribute(name,myFile.readLine());
                 if (myFile.readLine().equals("---")){                
                 if (value.getType().equals("Numeric")) {
 //                    addRequirement(String name, String value, int value){
-                    myVerb.addRequirement(name,null,value.getintData());
+                    myVerb.addCallerRequirement(name,Integer.toString(value.getintData()),myOperation);
                 }else{
-                    myVerb.addRequirement(name,value.getData(),0); //Integer cannot be null?
+                    myVerb.addCallerRequirement(name,value.getData(),myOperation); //Integer cannot be null?
+                }
+                } else throw new Exception("Problem in REQUIREMENT");
+            }
+
+            if (command.equals("TARGETREQUIREMENT")){ //We don't parseBracket because we don't care about the actual value
+                String operation=myFile.readLine();
+                comparison myOperation;
+                if (operation.equals("*NOTEQUAL*")) myOperation=comparison.notequals;
+                else if (operation.equals("*GREATERTHAN*")) myOperation=comparison.greaterthan;
+                else if (operation.equals("*LESSTHAN*")) myOperation=comparison.lessthan;           
+                else if (operation.equals("*EQUALS*")) myOperation=comparison.equals;
+                else throw new Exception("An appropriate comparison was not found");
+                String name=myFile.readLine();//this.extractTag(myFile.readLine(),'[',']'); 
+                Attribute value=dataToAttribute(name,myFile.readLine());
+
+                if (myFile.readLine().equals("---")){                
+                if (value.getType().equals("Numeric")) {
+//                    addRequirement(String name, String value, int value){
+                    myVerb.addTargetRequirement(name,Integer.toString(value.getintData()),myOperation);
+                }else{
+                    myVerb.addTargetRequirement(name,value.getData(),myOperation); //Integer cannot be null?
                 }
                 } else throw new Exception("Problem in REQUIREMENT");
             }
@@ -199,6 +227,7 @@ public class TrailBlazer {
                     myVerb.addCopyAttributetoCaller(sourceName,destinationName); //Only difference between copytocaller
                 }else throw new Exception("Problem in COPYTOTARGET");               
             }
+
 /*
             if (command.equals("COPYTOCALLER")) {
                 String sourceName=this.extractTag(myFile.readLine(),'[',']');
@@ -323,14 +352,16 @@ public class TrailBlazer {
 
     public void Parse() {
         //This code is meaningful because we DON'T know what state the world might be called in when this is executed
-        while (my_blazes==TrailBlazes.CONTINUE) {
+        while (my_blazes==TrailBlazes.CONTINUE && myUser.gameover==false) { //Gameover should not be needed.. why is this called!
             refresh=true;
             this.readNextCommand();
         }
-        if (my_blazes==TrailBlazes.INVALID && refresh){
-            refresh=false;
-            myUser.doneVerb();
-        }
+        SerializeJSON.addLog("Returning from the readNextCommand blocks");
+        if (my_blazes!=TrailBlazes.INQUIRE) myUser.returnFromPath();
+        //if (my_blazes==TrailBlazes.INVALID && refresh){
+        //    refresh=false;
+        //    myUser.doneVerb();
+        //}
 
         //try{myUser.send_message("IT seems we are done parsing with my_blazes="+my_blazes,"Server",Message.CHAT);
         //}catch (IOException ee) {}
@@ -446,6 +477,7 @@ public class TrailBlazer {
                 String replace="";
                 SerializeJSON.addLog("The attribute about to be passed in is: " + object.substring(laststart+1,i));
                 Attribute replacement=myUser.returnAttribute(object.substring(laststart+1,i));
+                if (replacement==null) throw new Exception("attribute not found in returnResult");
                 if (replacement.getType().equals("Text")) replace=replacement.getData();
                     else replace=Integer.toString(replacement.getintData());
                 if (laststart!=0) prepend=object.substring(0,laststart);
@@ -478,7 +510,7 @@ public class TrailBlazer {
         */
 
 
-
+        String command="NO COMMAND GIVEN";
         try {
             /*
                         if (st==null) {
@@ -494,10 +526,22 @@ public class TrailBlazer {
                         }
             */
 
-            st=this.br.readLine();
+            try {
+                st=this.br.readLine();
+                } catch (Exception e) {
+                    command="this.br.readLine()";
+                    throw new Exception();
+                }
+
+            try {
+            command = this.extractTag(st, '*','*');
+                } catch (Exception e) {
+                    command="command = this.extractTag(st, '*','*');";
+                    throw new Exception();
+                }
             
             
-            String command = this.extractTag(st, '*','*');
+
             try {
                 if (command.equals("PRINT")) { //The User
                     //myUser.send_message("Entering the print subroutine","Server",Message.CHAT);
@@ -527,7 +571,7 @@ public class TrailBlazer {
                 }
             }
 
-            if (command.equals("SET")) {
+            if (command.equals("SET") || command.equals("GET_ATTRIBUTE")) {
                 SerializeJSON.addLog("Entering set Block");
                 String attrName;
                 String attrData;
@@ -559,8 +603,10 @@ public class TrailBlazer {
                         myLastQuestion=new storeQuestion(attrName,"Please enter an answer for " + attrName,true,Options);
                         SerializeJSON.addLog("storeQuestion has been saved with options");
                         //this.sendQuestion(myLastQuestion);
+                        my_blazes=TrailBlazes.INQUIRE;
                         try {myUser.askQuestion(attrName,"Please enter an answer for " + attrName,true,Options);}
-                        catch (Exception e) {SerializeJSON.addLog("something went wrong iwth askQuestion."+e.toString());}
+                       
+                        catch (Exception e) {SerializeJSON.addLog("something went wrong iwth askQuestion."+e.toString());my_blazes=TrailBlazes.INVALID;}
                         SerializeJSON.addLog("askquestion has been saved with askquestions");
                         my_blazes=TrailBlazes.INQUIRE;
                         return;
@@ -709,8 +755,9 @@ public class TrailBlazer {
             }
             }
 
-            if (command.equals("GOTO")) {
-                br=setReader(filePath, this.parseBracket(br.readLine()).get(0).getData()); //Look at that - no error checking whatsoever.
+            if (command.equals("GOTO")) { //This is copied into IFEXISTS, and should be modified concurrently
+                //br=setReader(filePath, this.parseBracket(br.readLine()).get(0).getData()); //Look at that - no error checking whatsoever.
+                br=setReader(filePath,returnResult(br.readLine()));
                 my_blazes=TrailBlazes.CONTINUE;
                 return;
             }
@@ -789,26 +836,88 @@ public class TrailBlazer {
                 }
             }
 
-            if (command.equals("SIDEPATH")){
-                SerializeJSON.addLog("We are not inside of the sidepath");
+            if (command.equals("SIDEPATH")){ //This code is copied and pasted into ifexists!  Modify concurrently!  (consider making it a function);
+                SerializeJSON.addLog("We are now inside of the sidepath");
 //                String subroutine=composeAttributeList(this.parseBracket(br.readLine()),false);
                   String subroutine=returnResult(br.readLine());
-                SerializeJSON.addLog("We are now going down: " + subroutine);
-                TrailBlazer sideTrail=null;
-                if (br.readLine().equals("---")) sideTrail=new TrailBlazer(this.filePath,myUser,null,null,subroutine);
-                if (sideTrail!=null && sideTrail.my_blazes==TrailBlazes.GAMEOVER)my_blazes=TrailBlazes.GAMEOVER;
-                
+                //SerializeJSON.addLog("We are now going down: " + subroutine);
+                //TrailBlazer sideTrail=null;
+                if (br.readLine().equals("---")) myUser.sidePath(subroutine); //sideTrail=new TrailBlazer(this.filePath,myUser,null,null,subroutine);
+                my_blazes=TrailBlazes.INQUIRE;
+                return;
+                //if (sideTrail!=null && sideTrail.my_blazes==TrailBlazes.GAMEOVER)my_blazes=TrailBlazes.GAMEOVER;
             }
 
-            if (command.equals("GAMEOVER")){ //
-                my_blazes=TrailBlazes.GAMEOVER;
+            if (command.equals("GAMEOVER")){
+                ///BUG!: We need to see how, exactly, this function get's called on failure.  Otherwise we would not have to have the if statement in the catch below
+                my_blazes=TrailBlazes.GAMEOVER; //By itself, causes a lockup.. why?
+                myUser.gameover();
+                return;
+            }
+
+            if (command.equals("VERB")){
+                String target=returnResult(br.readLine());
+                String verb=returnResult(br.readLine());
+                SerializeJSON.addLog("Verb called.  Target is: " + target + " and the verb is: " + verb);
+                myUser.callVerb(target,verb);
+            }
+            /*
+            	---
+            	*IFEXISTS*
+            	*GOTO* or *SIDEPATH*
+            	[variable]
+            	sometrail.trail
+            	falsetrail.trail
+            	---
+            
+            */
+
+            if (command.equals("IFEXISTS")){
+                String behave = this.extractTag(br.readLine(),'*','*'); //This can be either *GOTO* or *SIDETRAIL*
+                SerializeJSON.addLog("Behavoir in ifexists is: " + behave);
+
+                boolean exitEarly=false;
+                try {
+                    String attrName=returnResult(br.readLine()); //Checks for an object; if it does NOT exist it throws the error and goes into the catch
+                    if (myUser.returnAttribute(attrName)==null) throw new Exception("Not a real execption, triggering log file");
+						  SerializeJSON.addLog("Exit Early will be Fasle");
+                }catch(Exception e){ //Reaching this should mean an error was thrown in returnResult - this means the thing does not exist!
+                	  SerializeJSON.addLog("exitEarly will be true");
+                    exitEarly=true; //This has to be seperate, because the ONLY error we don't throw back to the user is if this variable is not found.  *IFEXISTS*
+                }
+                String destination=returnResult(br.readLine());
+                if (destination.equals("---")) throw new Exception("No file path stated"); // Because there needs to be at least one .trail file for the result
+                String secondDestination=br.readLine();
+                String finalLine;
+                if (secondDestination.equals("---"))finalLine=secondDestination;
+                else finalLine=br.readLine();
+                if (finalLine!=null && finalLine.equals("---")){ //Need the null check because of possible errors in br.readLine()
+                    if (exitEarly) {
+                        if (secondDestination==finalLine) return;
+                        else{
+                         	if (secondDestination.equals("---")) return; //This means there IS no second destination, hence the variable read --- rather than something.trail
+                         	destination=secondDestination; //Set the destination varibale to be equal to the failure case
+                        }
+                    }
+                    if (behave.equals("GOTO")){ //This is copied from goto, and should be modified concurrently!!
+                        br=setReader(filePath,destination);
+                        my_blazes=TrailBlazes.CONTINUE;
+                    }
+                    if (behave.equals("SIDEPATH")){ //This code was simply copied and pasted from Sidepath!  Modify Concurrently!!
+    						SerializeJSON.addLog("We are now inside of the sidepath");
+                		if (finalLine.equals("---")) myUser.sidePath(destination); //sideTrail=new TrailBlazer(this.filePath,myUser,null,null,subroutine);
+                		my_blazes=TrailBlazes.INQUIRE;
+                		return;
+                    }
+
+                }else throw new Exception("Invalid formatting near IFEXISTS");
             }
 
 
         } catch(Exception e) { //If this happens, we may have a simple end of file.
             my_blazes=TrailBlazes.INVALID;
             SerializeJSON.addLog("Exception has occured while parsing"+ e.toString());
-            myUser.send_message("Exception has occured while parsing "+ e.toString(),"Server",Message.CHAT);
+            if (!command.equals("NO COMMAND GIVEN")) myUser.send_message("Exception has occured while parsing "+ e.toString() + "Player name was: " + myUser.returnAttribute("name").getData() + " last command was: " + command,"Server",Message.CHAT);
             return;
         }
     }

@@ -13,6 +13,11 @@ public static java.nio.file.Path logger=null;
 public static List<String> lines = Arrays.asList("The first line", "The second line");
 public static Logger LOGGER = Logger.getLogger(SerializeJSON.class.getName());
 
+public static String getDir(){
+    //return  "/var/lib/tomcat9/webapps/myapp-0.1-dev/multiplayertest/";
+    return "/var/lib/tomcat9/webapps/myapp-0.1-dev/sidetest/";
+}
+
 public static void initilizeLogger(){
         LOGGER.info("Logger Name: "+LOGGER.getName());
 }

@@ -21,10 +21,13 @@ public class User { // implements Runnable {
     private boolean lastNumeric;
     private List<String> lastOptions;
     private List<User> eligiblePlayers;
+    public boolean gameover;
+    private List<TrailBlazer> myPaths = new ArrayList<TrailBlazer>();    
+    
     int tempcount;
-
     User(String name, Session my_session, Park myPark)
     {
+        gameover=false;
         tempcount=0;
         this.myPark=myPark;
         this.AI=false;
@@ -33,13 +36,17 @@ public class User { // implements Runnable {
         ask=false;
         this.session=my_session;
         this.in_public_chat=true;
-        String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
+        String rootdir = SerializeJSON.getDir();
         myTrail=new TrailBlazer(rootdir,this,null,null,"trailhead.trail");
         baseTrail=myTrail;
         if (myTrail==null) SerializeJSON.addLog("Mytrail is null within User initilization");
         else SerializeJSON.addLog("Mytrail is not null within User INitilization");
         myTrail.startUser();
         //myTrail.waiting="";
+    }
+    
+    public void callVerb(String target, String verb){
+        myPark.executeVerb(target, verb, this.session);
     }
 
 //myUser.broadcast(attrName, value,st,Message.CHAT);
@@ -62,7 +69,7 @@ public class User { // implements Runnable {
     }
 
     public void Refresh() {
-        myTrail.Parse();
+        if (myTrail!=null) myTrail.Parse();
     }
 
     public boolean targetVerb(Verb myVerb) { //This always returns true for testing reasons
@@ -82,25 +89,43 @@ public class User { // implements Runnable {
     }
 
     public boolean executeVerb(Verb myVerb){ //This executes the verb....
-        String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";        
+            String rootdir = SerializeJSON.getDir();
         //TrailBlazer verbTrail=new TrailBlazer(
         return false;
     }
+    
+    public void sidePath(String input){
+		if (myTrail!=null) myPaths.add(myTrail);
+	 	myTrail = new TrailBlazer(SerializeJSON.getDir(),this,null,null,input);
+	 	SerializeJSON.addLog("About to enter path: " + input);
+	 	myTrail.startUser();
+    }
+    
+    public void returnFromPath(){ //Simply moves back one step
+    	if (myPaths.size()!=0 && myTrail!=null && myTrail.my_blazes==TrailBlazes.INVALID) {
+			SerializeJSON.addLog("Returning from a path");			
+			myTrail=myPaths.get(myPaths.size()-1);
+			myPaths.remove(myPaths.size()-1);
+			myTrail.my_blazes=TrailBlazes.CONTINUE;
+			myTrail.startUser();
+    	}
+    }
 
-    public boolean executeVerb (String instructions){
+    public boolean executeVerb (String instructions){ //This needs to be modified to support either sidepath or goto-like behavior
         synchronized (this){ //This may not allow for multiple verbs at once, but let's just get this working.  Can this even be called multiple times?
             //The verb itself should handle limitatations on execution...
+            //if (myTrail==null) {SerializeJSON.addLog("Mytrail is null within executeVerb");return false;}
             TrailBlazer oldBlazer=this.myTrail;
-            String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
+            String rootdir = SerializeJSON.getDir();// "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
             this.myTrail=new TrailBlazer(rootdir,this,null,null,instructions);
             myTrail.startUser();
-            if (myTrail==null) SerializeJSON.addLog("Mytrail is null within executeVerb");
             //this.myTrail=oldBlazer; //This line of code happens much too quickly.
         }
         return true;
     }
 
     public void doneVerb(){
+        if (this.myTrail==null) return; //The game is over if this happens!  It should be the only condition that can cause this
         this.myTrail=baseTrail;
         if (myTrail!= null)
         if  (myTrail.waiting != null) { //HOw can this be a null pointer error?  I access no properties of myTrail.waiting
@@ -108,13 +133,22 @@ public class User { // implements Runnable {
         }
         this.Refresh();
     }
+    
+    public void gameover(){
+        gameover=true;
+        this.in_public_chat=false;
+        this.send_message("The game is over, and you have been disconnected.","Server",Message.CHAT);
+        myTrail=null;
+    }
 
     public void verbTrail(Verb verbReference) {
-        String rootdir = "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
+            String rootdir = SerializeJSON.getDir();
         //myVerbTrail=new(rootdir,this,null,verbReference);
     }
 
     public boolean input(String Type, String message) {
+
+        if (myTrail==null) return false;
         if (Type.equals("CHAT"))
         {
             if (this.in_public_chat==true) return true;
@@ -158,7 +192,7 @@ public class User { // implements Runnable {
                 }
                 this.send_message("Answer not Listed","Server",Message.CHAT);
                 return false;
-            } else {
+            } else {    
                 this.send_message("It appears that someone else has already chosen that.  Can you try a different one?","Server",Message.CHAT);
                 this.askQuestion(myTrail.waiting,lastQuestion,lastNumeric,lastOptions);
                 return false;
