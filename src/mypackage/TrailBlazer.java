@@ -27,22 +27,24 @@ public class TrailBlazer {
     public TrailBlazes my_blazes; //The status of this trail
     protected String Command;
     private String filePath;
+    private String currentFile;
     private BufferedReader br;
     public boolean refresh=true;
     storeQuestion myLastQuestion;
     User myUser;
     Park myPark;
     Verb myVerb;
+    boolean sidePath;    
+    
     public String waiting;
-
-    
-    
     private List<Verb> myVerbs = new ArrayList<Verb>();
 
     public List<Verb> returnVerbs(){
         return myVerbs;
     }
+    
     TrailBlazer (String startPath, User calling_user, Park calling_park, List<Verb> calling_verb,String instructions) { //Honestly, verb may as well have been a boolean at this point
+		  sidePath=false;        
         waiting=new String("test");
         SerializeJSON.addLog("Blazing a trail!");
         myUser=calling_user;
@@ -91,7 +93,8 @@ public class TrailBlazer {
                 //this.br = this.setReader(startPath,"trailhead.trail");
                 this.br=this.setReader(startPath,instructions);
                 this.filePath=startPath;
-                my_blazes=TrailBlazes.CONTINUE;
+                this.currentFile=instructions;
+                my_blazes=TrailBlazes.INVALID;
                 //this.Parse();
             } catch (IOException e) { //NoSuchElementException
                 //myUser.send_message("IO Exception has occured "+ e.toString(),"Server",Message.CHAT);
@@ -102,8 +105,12 @@ public class TrailBlazer {
 
     }
 
-    public void startUser() {
-        this.Parse();
+    public void startUser() { //This is the appropriate place to add code which will withdraw previous questions!
+    	 //this.Parse() by itself will cause errors with goto because then there is a recursive execution of the parsing function.  However, we DO need to call parse again for verbs
+        if (my_blazes==TrailBlazes.INVALID) {
+				my_blazes=TrailBlazes.CONTINUE;
+	        	this.Parse();
+        	}else SerializeJSON.addLog("Rejecting start: " + my_blazes);
     }
 
     private void parseVerb() throws Exception {
@@ -211,7 +218,7 @@ public class TrailBlazer {
             if (command.equals("COPYTOTARGET")) {
                 //    public void addCopyAttribute(verbTarget mySource, String attributeName, String copyName){
                 //st=myFile.readLine();
-                SerializeJSON.addLog("COPTYTOTARGET is being read");
+                SerializeJSON.addLog("COPYTOTARGET is being read");
                 String sourceName=this.extractTag(myFile.readLine(),'[',']');
                 String destinationName=this.extractTag(myFile.readLine(),'[',']');
                 if (myFile.readLine().equals("---")){
@@ -225,18 +232,28 @@ public class TrailBlazer {
                 String destinationName=this.extractTag(myFile.readLine(),'[',']');
                 if (myFile.readLine().equals("---")){
                     myVerb.addCopyAttributetoCaller(sourceName,destinationName); //Only difference between copytocaller
-                }else throw new Exception("Problem in COPYTOTARGET");               
-            }
-
-/*
-            if (command.equals("COPYTOCALLER")) {
-                String sourceName=this.extractTag(myFile.readLine(),'[',']');
-                String destinationName=this.extractTag(myFile.readLine(),'[',']');
-                if (myFile.readLine().equals("---")){
-                    myVerb.addCopyAttributetoCaller(sourceName,destinationName);//only difference between copytotarget
                 }else throw new Exception("Problem in COPYTOCALLER");               
             }
+            
+				if (command.equals("RETURNAFTER")){
+					String operation=myFile.readLine();
+					if (myFile.readLine().equals("---")){
+						if (operation.equals("*RETURN*")) myVerb.setgotoType(false);
+						else if (operation.equals("*NORETURN*")) myVerb.setgotoType(true);
+						else throw new Exception("Problem in returnafter");
+					}else throw new Exception("Problem in returnafter");
+				}
+				/*
+				---
+*TIMER*
+*GOTO* or *SIDEPATH* //Wether or not your game continues executing where it was or if the game simply changes trails when the timer activates
+1000
+yourPath.trail
+---
 */
+				//	scriptTimer(User myUser,String myTrail,boolean gotoType,long seconds){
+
+				
             SerializeJSON.addLog("We are returning true.");
             return true;
         } catch (Exception e) {
@@ -341,6 +358,12 @@ public class TrailBlazer {
                 if (br.readLine().equals("---")) this.myPark.setBannedContent(name,value);
                 else throw new Exception("cannot read BANNEDCONTENT in gameworld");
             }
+            
+            if (command.equals("EXITSCRIPT")){ //I should probably start to support multiple exit scripts at some piont
+					String script=br.readLine();			
+					if (br.readLine().equals("---"))	myPark.addExitScript(script);
+					else throw new Exception("Problem in EXITSCRIPT");
+            }
 
 
         } catch (Exception ee) {
@@ -352,12 +375,15 @@ public class TrailBlazer {
 
     public void Parse() {
         //This code is meaningful because we DON'T know what state the world might be called in when this is executed
+		  SerializeJSON.addLog("Parse() function is starting");        
         while (my_blazes==TrailBlazes.CONTINUE && myUser.gameover==false) { //Gameover should not be needed.. why is this called!
             refresh=true;
             this.readNextCommand();
         }
-        SerializeJSON.addLog("Returning from the readNextCommand blocks");
-        if (my_blazes!=TrailBlazes.INQUIRE) myUser.returnFromPath();
+        SerializeJSON.addLog("Returning from the Parse() function at:"+currentFile);
+        //if (my_blazes!=TrailBlazes.INQUIRE || this.sidePath==true) myUser.returnFromPath();
+        if (this.sidePath==true && my_blazes != TrailBlazes.INQUIRE) myUser.returnFromPath();
+        if (my_blazes==TrailBlazes.INVALID) SerializeJSON.addLog("MyBlazes are now invalid");
         //if (my_blazes==TrailBlazes.INVALID && refresh){
         //    refresh=false;
         //    myUser.doneVerb();
@@ -438,6 +464,7 @@ public class TrailBlazer {
 
     private String extractTag(String parseObject, char startTag, char endTag) throws Exception {
         //findCommand=Pattern.compile("\\*+?(.+)\\*+");
+		  if (parseObject==null) throw new Exception("parseObject was null");			        
         int i=0;
         if (parseObject.charAt(i)!=startTag) throw new IOException("Something not a tag was treated as a tag");
         for (i=1; i<parseObject.length(); i++) {
@@ -477,7 +504,7 @@ public class TrailBlazer {
                 String replace="";
                 SerializeJSON.addLog("The attribute about to be passed in is: " + object.substring(laststart+1,i));
                 Attribute replacement=myUser.returnAttribute(object.substring(laststart+1,i));
-                if (replacement==null) throw new Exception("attribute not found in returnResult");
+                if (replacement==null) throw new Exception("attribute not found in returnResult!");
                 if (replacement.getType().equals("Text")) replace=replacement.getData();
                     else replace=Integer.toString(replacement.getintData());
                 if (laststart!=0) prepend=object.substring(0,laststart);
@@ -497,7 +524,20 @@ public class TrailBlazer {
     }
 }
 
+public void setsidePath(boolean result){
+	sidePath=result;
+}
+
+public void gotoTrail(String file) throws Exception{
+	SerializeJSON.addLog("Switching file to " + file + " old file was : " + currentFile);
+	this.waiting=null;
+	this.currentFile=file;
+	br=setReader(filePath,this.currentFile);
+	//my_blazes=TrailBlazes.INVALID; //This can cause the parser to stop inappropriately. Example: the goto is from a verb file
+}
+
     public void readNextCommand() {
+    	  SerializeJSON.addLog("Reading Next Command");
         String st;
         if (!this.advance(br)) return;
         /*try {
@@ -529,22 +569,22 @@ public class TrailBlazer {
             try {
                 st=this.br.readLine();
                 } catch (Exception e) {
-                    command="this.br.readLine()";
-                    throw new Exception();
+                    command="command=this.br.readLine()";
+                    throw new Exception(e.toString()+e.toString());
                 }
 
             try {
             command = this.extractTag(st, '*','*');
-                } catch (Exception e) {
-                    command="command = this.extractTag(st, '*','*');";
+                } catch (Exception e) { //We handle this differently since it occurs sometimes when returning from a verb for some reason  STOPGAP ONLY
+                    command="command = this.extractTag(st, '*','*')"+e.toString()+" current file: " + this.currentFile;
+                    //serializeJSON.addLog(command);
                     throw new Exception();
                 }
             
             
 
             try {
-                if (command.equals("PRINT")) { //The User
-                    //myUser.send_message("Entering the print subroutine","Server",Message.CHAT);
+                if (command.equals("PRINT")) { //Update concurrently with LOG!
                     st=this.br.readLine();
                     if (this.br.readLine().equals("---")) { //Send the message
                         //String myResult=this.composeAttributeList(this.parseBracket(st),false);
@@ -552,7 +592,7 @@ public class TrailBlazer {
                         if (myResult==null) throw new Exception("Result was null for some reason");
                         /*This needs to be given intermediary steps so that it can start to find world variables or other players variables*/
                         if (myResult!=null) myUser.send_message(myResult,"Server",Message.CHAT); else throw new Exception("Myresult was null for some reason");
-                        my_blazes=TrailBlazes.CONTINUE;
+                        //my_blazes=TrailBlazes.CONTINUE;
                         return;
                     }
                 }
@@ -567,7 +607,7 @@ public class TrailBlazer {
                 if (this.br.readLine().equals("---")) {
                     if (st.equals("CHAT"))myUser.in_public_chat=true;
                     if (st.equals("SOLO"))myUser.in_public_chat=false;
-                    my_blazes=TrailBlazes.CONTINUE;
+                    //my_blazes=TrailBlazes.CONTINUE;
                 }
             }
 
@@ -588,7 +628,6 @@ public class TrailBlazer {
                         my_blazes=TrailBlazes.INQUIRE;
                         myLastQuestion=new storeQuestion(attrName,"Please enter a value for " + attrName,false,null);
                         SerializeJSON.addLog("storeQuestion has been saved with top block");
-                        SerializeJSON.addLog("compile test");
                         //this.sendQuestion(myLastQuestion);
                         myUser.askQuestion(attrName,"Please enter a value for " + attrName,false,null);
                         return;
@@ -623,7 +662,7 @@ public class TrailBlazer {
                     myUser.setAttribute(createAttr);
                     String Choice=br.readLine();
                     if (Choice.equals("---")) {
-                        my_blazes=TrailBlazes.CONTINUE;
+                        //my_blazes=TrailBlazes.CONTINUE;
                         return;
                     } else throw new IOException();
                 }
@@ -635,7 +674,7 @@ public class TrailBlazer {
                     //String Result=this.composeAttributeList(this.parseBracket(st),false);
                     String Result=returnResult(st);
                     myUser.setChatName(Result);
-                    my_blazes=TrailBlazes.CONTINUE;
+                    //my_blazes=TrailBlazes.CONTINUE;
                     return;
                 } else {throw new IOException("CHATNAME block contains invalid information or is malformed");}
             }
@@ -669,7 +708,7 @@ public class TrailBlazer {
                 //Attribute second=this.dataToAttribute("second",this.parseBracket(br.readLine()));
                 //myUser.send_message("first was: " + first.getData() + " tag was " + first.tag,"Server: ", Message.CHAT);
                 //myUser.send_message("second was: " + second.getData() + " tag was " + second.tag,"Server: ", Message.CHAT);
-                if (!first.getType().equals("Numeric") || !second.getType().equals("Numeric")) throw new Exception("Math entry is not a number"); //Should I be using and/or
+                if (!first.getType().equals("Numeric") || !second.getType().equals("Numeric")) throw new Exception("Math entry is not a number: Name"+first.getName() + " Type: " +first.getType() + " Name: " + second.getName() + " type: " + second.getType()); //Should I be using and/or
                 if (next.equals("ADD")) {
                     result=this.dataToAttribute(anAttribute,Integer.toString(first.getintData()+second.getintData()));
                 } else if (next.equals("SUBTRACT")) {
@@ -707,58 +746,91 @@ public class TrailBlazer {
             */
 
             if (command.equals("IF")) {
+            	boolean gotoType=true;
 //                String firstCondition=this.parseBracket(br.readLine());
 //                  String firstCondition=this.parseBracket(br.readLine()).get(0).
-                Attribute first=this.parseBracket(br.readLine()).get(0); //Again add debugging based on list size
+				    String returnType=br.readLine();
+				    if (returnType.equals("*SIDEPATH*"))gotoType=false; //Must convert this back to extracttags
+				    else if (!returnType.equals("*GOTO*")) throw new Exception("Could not process return type in if statement");
+				    
+					 String first=returnResult(br.readLine());                
                 String operator;
                 try {operator=this.extractTag(br.readLine(),'*','*');}
                 catch (Exception e) { throw new Exception("Problem in IF statement");}
-//                String secondCondition=this.parseBracket(br.readLine());
-                Attribute second=this.parseBracket(br.readLine()).get(0);
-                //Attribute first = this.dataToAttribute("First",firstCondition);
-                //Attribute second = this.dataToAttribute("Second",secondCondition);
-                String trueResult=br.readLine();
-                String falseResult=br.readLine();
+					 String second=returnResult(br.readLine());
+                String trueResult=returnResult(br.readLine());
+                String falseResult=returnResult(br.readLine());
+                if (!br.readLine().equals("---")) throw new Exception("Problem finding --- after IF");
                 if (operator.equals("=")) {
-                    String firstParameter;
-                    String secondParameter;
-                    if (first.getType().equals("Text")) firstParameter=first.getData();
-                    else firstParameter=Integer.toString(first.getintData());
-                    if (second.getType().equals("Text")) secondParameter=second.getData();
-                    else secondParameter=Integer.toString(second.getintData());
-                    if (firstParameter.equals(secondParameter)) {
-                        try {br=setReader(filePath, trueResult);}
-                        catch (Exception e) {throw new IOException("Problem in if block " + e.toString());}
+                    if (first.equals(second)) {
+                    		myUser.executeVerb(trueResult,gotoType);
                     } else {
-                        try {br=setReader(filePath, falseResult);}
-                        catch (Exception e) {throw new IOException("Problem in if block " + e.toString());}
+								myUser.executeVerb(falseResult,gotoType);
                     }
-                    my_blazes=TrailBlazes.CONTINUE;
+                    //my_blazes=TrailBlazes.CONTINUE;
+                    return; //We do not have to read the last --- until we implement true returning branches
+                }
+                
+                if (operator.equals("!=")) {
+                    if (!first.equals(second)) {
+								   myUser.executeVerb(trueResult,gotoType);
+                    } else {
+									myUser.executeVerb(falseResult,gotoType);
+                    }
+                    //my_blazes=TrailBlazes.CONTINUE;
                     return; //We do not have to read the last --- until we implement true returning branches
                 }
 
-                int firstParameter;
-                int secondParameter;
-                if (first.getType().equals("Text")) throw new Exception("Non-equality comparisons must be numeric (so far)");
-                else firstParameter=first.getintData();
-                if (second.getType().equals("Text")) throw new Exception("Non-equality comparisons must be numeric (so far)");
-                else secondParameter=second.getintData();
+                long firstParameter;
+                long secondParameter;
+				    try{
+						firstParameter=Integer.parseInt(first);
+						secondParameter=Integer.parseInt(second);			    
+				    }catch(Exception e){
+					    throw new Exception("Both variables must be numeric for numeric comparators");
+				    }
 
                 if (operator.equals(">")){
                     if (firstParameter>secondParameter){
-                        try {br=setReader(filePath, trueResult);}
-                        catch (Exception e) {throw new IOException("Problem in if block " + e.toString());}
+								   myUser.executeVerb(trueResult,gotoType);
                     } else {
-                        try {br=setReader(filePath, falseResult);}
+                        try {myUser.executeVerb(falseResult,gotoType);}
                         catch (Exception e) {throw new IOException("Problem in if block " + e.toString());}
                     }
             }
+            
+            if (operator.equals(">=")){
+                 if (firstParameter>=secondParameter){
+								   myUser.executeVerb(trueResult,gotoType);
+                 } else {
+									myUser.executeVerb(falseResult,gotoType);
+                 }
+         	}
+         	
+         	 if (operator.equals("<")){
+                 if (firstParameter<secondParameter){
+								   myUser.executeVerb(trueResult,gotoType);
+                 } else {
+									myUser.executeVerb(falseResult,gotoType);
+                 }
+         	}
+         	
+         	if (operator.equals("<=")){
+                 if (firstParameter<=secondParameter){
+								   myUser.executeVerb(trueResult,gotoType);
+                 } else {
+									myUser.executeVerb(falseResult,gotoType);
+                 }
+         	}
+         	
+         	
+         	
             }
 
             if (command.equals("GOTO")) { //This is copied into IFEXISTS, and should be modified concurrently
                 //br=setReader(filePath, this.parseBracket(br.readLine()).get(0).getData()); //Look at that - no error checking whatsoever.
-                br=setReader(filePath,returnResult(br.readLine()));
-                my_blazes=TrailBlazes.CONTINUE;
+                //this.currentFile=returnResult(br.readLine());
+  				    gotoTrail(returnResult(br.readLine()));
                 return;
             }
 
@@ -782,16 +854,29 @@ public class TrailBlazer {
             }
 
             if (command.equals("RANDOM")) {
-                myUser.send_message("beggining random","Server",Message.CHAT);
-                Attribute bottom = this.parseBracket(br.readLine()).get(0); //This is the problem!!  Prasebracket is not appropriate
-                Attribute top    = this.parseBracket(br.readLine()).get(0);
-                //myUser.send_message("we have parsed top and bottom numbers","Server",Message.CHAT);
+                myUser.send_message("beginning random","Server",Message.CHAT);
+                //Attribute bottom = this.parseBracket(br.readLine()).get(0); //This is the problem!!  Prasebracket is not appropriate
+                //Attribute top    = this.parseBracket(br.readLine()).get(0);
+                String placeholder=returnResult(br.readLine());
+                Attribute bottom = myUser.returnAttribute(placeholder);
+                if (bottom==null){ //We need to assume that this is a number
+						bottom=dataToAttribute("bottom",placeholder);          
+                }
+                placeholder=returnResult(br.readLine());
+                Attribute top = myUser.returnAttribute(placeholder);
+                if (top == null){
+                	top=dataToAttribute("top",placeholder);
+                }
+
                 if (top.getType()!="Numeric" || bottom.getType()!="Numeric") throw new Exception("Something is wrong with a random number");
-                Attribute set=this.parseBracket(br.readLine()).get(0);
+                //Attribute set=this.parseBracket(br.readLine()).get(0);
+                String set = returnResult(br.readLine());
                 Random rand = new Random();
+                
                 int result = rand.nextInt(top.getintData()-bottom.getintData())+bottom.getintData();
 //              private Attribute dataToAttribute(String attrName, String parseObject) {
-                if (br.readLine().equals("---")) myUser.setAttribute(dataToAttribute(set.getName(),Integer.toString(result))); //....This is comically inefficient
+					//    public void setAttribute(String Type, String Name, String Data, int intData, float floatdata) {
+                if (br.readLine().equals("---"))myUser.setAttribute("Numeric",set,null,result,0); //myUser.setAttribute(dataToAttribute(set.getName(),Integer.toString(result))); //....This is comically inefficient
                 else throw new Exception("Syntax Error");
                 myUser.send_message("commandblock result was: "+Integer.toString(result)+"bottom: "+Integer.toString(bottom.getintData())+"top: "+Integer.toString(top.getintData()),"Server",Message.CHAT);
                 return;
@@ -821,7 +906,7 @@ public class TrailBlazer {
                 }else { //instead of *ALL* we have attribute
                     SerializeJSON.addLog("Starting a private broadcast");
 //                    String attrName=composeAttributeList(this.parseBracket(st),false);
-                    String attrName=returnResult(st);
+                    String attrName=returnResult(br.readLine());
                     SerializeJSON.addLog("attrName: " + attrName);
 //                    String value=composeAttributeList(this.parseBracket(br.readLine()),false);
                     String value=returnResult(br.readLine());
@@ -838,12 +923,9 @@ public class TrailBlazer {
 
             if (command.equals("SIDEPATH")){ //This code is copied and pasted into ifexists!  Modify concurrently!  (consider making it a function);
                 SerializeJSON.addLog("We are now inside of the sidepath");
-//                String subroutine=composeAttributeList(this.parseBracket(br.readLine()),false);
-                  String subroutine=returnResult(br.readLine());
-                //SerializeJSON.addLog("We are now going down: " + subroutine);
-                //TrailBlazer sideTrail=null;
+                 String subroutine=returnResult(br.readLine());
                 if (br.readLine().equals("---")) myUser.sidePath(subroutine); //sideTrail=new TrailBlazer(this.filePath,myUser,null,null,subroutine);
-                my_blazes=TrailBlazes.INQUIRE;
+                my_blazes=TrailBlazes.WAIT; // Must be different from inquire since verbs can call this out of the blue
                 return;
                 //if (sideTrail!=null && sideTrail.my_blazes==TrailBlazes.GAMEOVER)my_blazes=TrailBlazes.GAMEOVER;
             }
@@ -859,8 +941,22 @@ public class TrailBlazer {
                 String target=returnResult(br.readLine());
                 String verb=returnResult(br.readLine());
                 SerializeJSON.addLog("Verb called.  Target is: " + target + " and the verb is: " + verb);
-                myUser.callVerb(target,verb);
+                if (br.readLine().equals("---")) myUser.callVerb(target,verb);
             }
+
+                    if (command.equals("LOG")) { //This should look exactly like print: except it spits the contents out to the log file.  Update concurrently with print!
+                    		st=this.br.readLine();
+                    		if (this.br.readLine().equals("---")) { //Send the message
+	                        String myResult=returnResult(st);
+	                        if (myResult==null) throw new Exception("Result was null for some reason");
+	                        /*This needs to be given intermediary steps so that it can start to find world variables or other players variables*/
+	                        SerializeJSON.addLog(myResult);
+	                        //my_blazes=TrailBlazes.CONTINUE;
+	                        return;
+                    		}
+                    		
+                }
+            
             /*
             	---
             	*IFEXISTS*
@@ -879,8 +975,8 @@ public class TrailBlazer {
                 boolean exitEarly=false;
                 try {
                     String attrName=returnResult(br.readLine()); //Checks for an object; if it does NOT exist it throws the error and goes into the catch
-                    if (myUser.returnAttribute(attrName)==null) throw new Exception("Not a real execption, triggering log file");
-						  SerializeJSON.addLog("Exit Early will be Fasle");
+                    if (myUser.returnAttribute(attrName)==null) throw new Exception("Not a real expectation, triggering log file");
+						  SerializeJSON.addLog("Exit Early will be False");
                 }catch(Exception e){ //Reaching this should mean an error was thrown in returnResult - this means the thing does not exist!
                 	  SerializeJSON.addLog("exitEarly will be true");
                     exitEarly=true; //This has to be seperate, because the ONLY error we don't throw back to the user is if this variable is not found.  *IFEXISTS*
@@ -900,24 +996,100 @@ public class TrailBlazer {
                         }
                     }
                     if (behave.equals("GOTO")){ //This is copied from goto, and should be modified concurrently!!
-                        br=setReader(filePath,destination);
-                        my_blazes=TrailBlazes.CONTINUE;
+                        gotoTrail(returnResult(br.readLine()));
                     }
+                    
                     if (behave.equals("SIDEPATH")){ //This code was simply copied and pasted from Sidepath!  Modify Concurrently!!
     						SerializeJSON.addLog("We are now inside of the sidepath");
                 		if (finalLine.equals("---")) myUser.sidePath(destination); //sideTrail=new TrailBlazer(this.filePath,myUser,null,null,subroutine);
-                		my_blazes=TrailBlazes.INQUIRE;
+                		my_blazes=TrailBlazes.WAIT; //Must be different from inquire since verbs can call this out of the blue
                 		return;
                     }
+                    
 
                 }else throw new Exception("Invalid formatting near IFEXISTS");
             }
 
 
+            
+            if (command.equals("TIMER")) { //Possible memory leak!!! If "timer" doesn't exit on it's own, why would it's thread?
+					SerializeJSON.addLog("Entering timer");										
+					String type=br.readLine();
+					SerializeJSON.addLog("type: "+type);					
+					boolean gotoType=true;
+					if (type.equals("*SIDEPATH*"))gotoType=false;
+					else if (!type.equals("*GOTO*")) throw new Exception("Error reading TIMER");
+					String secondsString=returnResult(br.readLine());
+					long seconds;
+					try {
+						seconds =Long.parseLong(secondsString);
+					}catch (Exception e){
+						throw new Exception("Could not read the seconds value in TIMER");
+					}
+					SerializeJSON.addLog("seconds to delay: " + Long.toString(seconds));
+					String nextFile = returnResult(br.readLine());
+					SerializeJSON.addLog("nextfile: " +nextFile);
+					if (br.readLine().equals("---"))new scriptTimer(myUser,nextFile,gotoType,seconds);
+					else throw new Exception ("No --- found at end of TIMER");
+				}
+
+            if (command.equals("REMOVE")){ //NOT TESTED
+                String Variable = returnResult(br.readLine());
+                if (br.readLine().equals("---")) myUser.removeAttribute(Variable);
+            }
+
+            if (command.equals("CLEARGROUP") || command.equals("CLEARATTRIBUTES")){
+                if (br.readLine().equals("---")) myUser.clearAttributes();
+                else throw new Exception("Error in readline");
+            }
+
+            if (command.equals("CREATEGROUP")){
+                String groupName=returnResult(br.readLine());
+                boolean success=false;
+                if (br.readLine().equals("---"))success= myUser.addGroup(groupName); else throw new Exception("Error in CREATEGROUP");
+                if (success==false) throw new Exception ("ERROR: Group already created.");
+                
+            }
+
+            if (command.equals("CHANGEGROUP")){ 
+                String groupName=returnResult(br.readLine());
+                boolean success=false;
+                if (br.readLine().equals("---"))success= myUser.changeGroup(groupName); else throw new Exception("Error in CHANGEGROUP");
+                if (success==false) throw new Exception ("ERROR: Group does not exist");
+            }
+
+            if (command.equals("INDEXREMOVE")){
+                String index=returnResult(br.readLine());
+                int result=-1;
+                if (br.readLine().equals("---")){               
+                    int i=0;
+                    try {
+                        i=Integer.parseInt(index);
+                    } catch (Exception e){
+                        throw new Exception("Invalid Index Number in indexremove");
+                    }
+                    //boolean succcess=userGroup.removeAttribute(i); What is should be, you can't remove something that is not there
+                    myUser.removeAttribute(i);
+                }else throw new Exception("Error in INDEXREMOVE");
+            }
+
+            if (command.equals("GROUPCOUNT"){
+                String dest=returnResult(br.readLine());
+                if (br.readLine().equals("---"){
+                    myUser.assignGroupCount(dest);
+                }
+            }
+
+            //New Commands CopyToGroup
+            //CLEARGROUP | CHANGEGROUP | COPYTOGROUP | GROUPCOUNT
+            //Arrays and 
+
+            //All commands will 
+				
         } catch(Exception e) { //If this happens, we may have a simple end of file.
             my_blazes=TrailBlazes.INVALID;
             SerializeJSON.addLog("Exception has occured while parsing"+ e.toString());
-            if (!command.equals("NO COMMAND GIVEN")) myUser.send_message("Exception has occured while parsing "+ e.toString() + "Player name was: " + myUser.returnAttribute("name").getData() + " last command was: " + command,"Server",Message.CHAT);
+            //if (!command.equals("NO COMMAND GIVEN")) myUser.send_message("Exception has occured while parsing "+ e.toString() + "Player name was: " + myUser.returnAttribute("name").getData() + " last command was: " + command,"Server",Message.CHAT);
             return;
         }
     }

@@ -29,6 +29,7 @@ public class Attribute implements Cloneable {
         this.myName=Name;
     }
 
+
      public String getName() {
         return this.myName;
         //return Integer.toString(myintData);

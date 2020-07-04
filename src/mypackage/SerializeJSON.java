@@ -14,8 +14,10 @@ public static List<String> lines = Arrays.asList("The first line", "The second l
 public static Logger LOGGER = Logger.getLogger(SerializeJSON.class.getName());
 
 public static String getDir(){
+	 //return    "/var/lib/tomcat9/webapps/myapp-0.1-dev/timertest/";
+    return   "/var/lib/tomcat9/webapps/myapp-0.1-dev/challange/";
     //return  "/var/lib/tomcat9/webapps/myapp-0.1-dev/multiplayertest/";
-    return "/var/lib/tomcat9/webapps/myapp-0.1-dev/sidetest/";
+    //return "/var/lib/tomcat9/webapps/myapp-0.1-dev/sidetest/";
 }
 
 public static void initilizeLogger(){
@@ -52,6 +54,7 @@ public static String Serialize(String type, List<String> data) throws RuntimeExc
             first=false;
     }
     output+="]}";
+    output=output.replaceAll("\"","\\\"");
     SerializeJSON.addLog("The data being sent to the user is: " + output);
     return output;
 }

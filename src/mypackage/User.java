@@ -2,6 +2,7 @@ package mypackage;
 import javax.websocket.Session;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 public class User { // implements Runnable {
     private String name=null;
@@ -22,11 +23,15 @@ public class User { // implements Runnable {
     private List<String> lastOptions;
     private List<User> eligiblePlayers;
     public boolean gameover;
-    private List<TrailBlazer> myPaths = new ArrayList<TrailBlazer>();    
-    
+    private List<TrailBlazer> myPaths = new ArrayList<TrailBlazer>();
+    private Map<String, Group> Groups = new ConcurrentHashMap<>();//static final?
+    private Group currentGroup=new Group();
+
+
     int tempcount;
     User(String name, Session my_session, Park myPark)
     {
+        Groups.put("default",currentGroup);
         gameover=false;
         tempcount=0;
         this.myPark=myPark;
@@ -41,6 +46,7 @@ public class User { // implements Runnable {
         baseTrail=myTrail;
         if (myTrail==null) SerializeJSON.addLog("Mytrail is null within User initilization");
         else SerializeJSON.addLog("Mytrail is not null within User INitilization");
+        SerializeJSON.addLog("StartUser() being called in constructor");
         myTrail.startUser();
         //myTrail.waiting="";
     }
@@ -69,6 +75,7 @@ public class User { // implements Runnable {
     }
 
     public void Refresh() {
+    	  SerializeJSON.addLog("Calling myTrail.Parse() from Refresh()");
         if (myTrail!=null) myTrail.Parse();
     }
 
@@ -80,11 +87,6 @@ public class User { // implements Runnable {
         this.eligiblePlayers=eligiblePlayers;
         this.send_message(myVerb.getName(),myVerb.getName(),Message.VERB_UPDATE);
         this.eligiblePlayers=null; //free the memory, we should never need that again??
-        
-        //For the next time I work:
-        //I need to convert the list of Users into a list of strings.  Not hard, but, requires
-        //loading all the attributes of the "name" type, handling it if things go wrong (say, exclude them from the list)
-        //And THEN, finally, call this.send_message!!
         return true;
     }
 
@@ -95,31 +97,48 @@ public class User { // implements Runnable {
     }
     
     public void sidePath(String input){
+    	SerializeJSON.addLog("Entering sideTrail");
 		if (myTrail!=null) myPaths.add(myTrail);
+		myTrail.my_blazes=TrailBlazes.WAIT;
 	 	myTrail = new TrailBlazer(SerializeJSON.getDir(),this,null,null,input);
 	 	SerializeJSON.addLog("About to enter path: " + input);
+	 	myTrail.setsidePath(true);
+			SerializeJSON.addLog("startUser() being called in sidePath");
 	 	myTrail.startUser();
     }
+    
     
     public void returnFromPath(){ //Simply moves back one step
     	if (myPaths.size()!=0 && myTrail!=null && myTrail.my_blazes==TrailBlazes.INVALID) {
 			SerializeJSON.addLog("Returning from a path");			
 			myTrail=myPaths.get(myPaths.size()-1);
 			myPaths.remove(myPaths.size()-1);
-			myTrail.my_blazes=TrailBlazes.CONTINUE;
+			if (myTrail.my_blazes==TrailBlazes.WAIT) myTrail.my_blazes=TrailBlazes.INVALID;
+						SerializeJSON.addLog("startUser() being called in returnFromPath");
 			myTrail.startUser();
     	}
     }
+    
+    public void gotoVerb(String input){
+		SerializeJSON.addLog("Going to item from user: " + input);		
+		try {myTrail.gotoTrail(input);
+		}catch (Exception e){
+			SerializeJSON.addLog("Failure in gotoVerb");
+		}
+			SerializeJSON.addLog("startUser() being called in gotoVerb");
+			myTrail.startUser();
+			SerializeJSON.addLog("Count of myPaths: " + myPaths.size());
+    }
+    
+//TODO!  Add a goto function that can be used for verbs with that option rather than a *sidepath* option
+//See if I gameover in a sidepath verb, does it cause any weird behavoir later    
+    
 
-    public boolean executeVerb (String instructions){ //This needs to be modified to support either sidepath or goto-like behavior
+    public boolean executeVerb (String instructions, boolean gotoType){ //This needs to be modified to support either sidepath or goto-like behavior
         synchronized (this){ //This may not allow for multiple verbs at once, but let's just get this working.  Can this even be called multiple times?
-            //The verb itself should handle limitatations on execution...
-            //if (myTrail==null) {SerializeJSON.addLog("Mytrail is null within executeVerb");return false;}
-            TrailBlazer oldBlazer=this.myTrail;
-            String rootdir = SerializeJSON.getDir();// "/var/lib/tomcat9/webapps/myapp-0.1-dev/";
-            this.myTrail=new TrailBlazer(rootdir,this,null,null,instructions);
-            myTrail.startUser();
-            //this.myTrail=oldBlazer; //This line of code happens much too quickly.
+			//this.sidePath(instructions);
+			if (gotoType==true) this.gotoVerb(instructions);
+			else this.sidePath(instructions);
         }
         return true;
     }
@@ -131,6 +150,7 @@ public class User { // implements Runnable {
         if  (myTrail.waiting != null) { //HOw can this be a null pointer error?  I access no properties of myTrail.waiting
             myTrail.sendLastQuestion();
         }
+        SerializeJSON.addLog("Calling this.refresh() from doneverb");
         this.Refresh();
     }
     
@@ -156,6 +176,7 @@ public class User { // implements Runnable {
         }
 
         if (ask) { //Type should equal "COMMAND" at this point; this "ask" statement must be removed in order for unprompted commands to happen
+        		SerializeJSON.addLog("Ask is TRUE");
             if (myPark.uniqueAttributeAllowed(myTrail.waiting,message)) {
                 if (attrChoice==null) {
                     try {
@@ -187,10 +208,12 @@ public class User { // implements Runnable {
                         attrChoice=null;
                         //this.send_message("Thank you for setting the attribute","Server",Message.CHAT);
                         myTrail.my_blazes=TrailBlazes.CONTINUE;
+                        SerializeJSON.addLog("MyBlazes is being set to continue!");
                         return false;
                     }
                 }
                 this.send_message("Answer not Listed","Server",Message.CHAT);
+                this.askQuestion(myTrail.waiting,lastQuestion,lastNumeric,lastOptions);
                 return false;
             } else {    
                 this.send_message("It appears that someone else has already chosen that.  Can you try a different one?","Server",Message.CHAT);
@@ -241,52 +264,86 @@ public class User { // implements Runnable {
         return in_public_chat;
     }
 
-    public Attribute returnAttribute(String Name) {
-        for (Attribute key : myAttributes) {
-            if (key.getName().equals(Name)) return key;
-        }
-        return null;
+    public void removeAttribute(String Name){
+        currentGroup.removeAttribute(Name);
     }
-//                            myUser.setAttribute("Text",attrName,attrData,0,0);
+
+    public void removeAttribute(int count){
+        currentGroup.removeAttribute(count);
+    }
+    
+
     public void setAttribute(String Type, String Name, String Data, int intData, float floatdata) {
-        Attribute manipular;
-        manipular=null; //Since it may not be set in the case of an exception
-        try {
-            manipular=returnAttribute(Name);
-        } catch(Exception e) {
-            manipular=null;
-        }
-
-        //manipular=null;
-        if (manipular==null) {
-            myAttributes.add(new Attribute(Type, Name, Data, floatdata, intData));
-            //this.send_message("Adding new Attribute: *" + Name+"*","Server",Message.CHAT);
-        } else {
-            manipular.setAttributes(Type, Name, Data, floatdata, intData);
-        }
+        currentGroup.setAttribute(Type, Name, Data, intData, floatdata);
     }
 
-
-    public void setAttribute(Attribute newAttribute) { //For thread safety: this MUST be in a synchronized statement!
-        Attribute manipular;
-        manipular=null; //Since it may not be set in the case of an exception
-        try {
-            manipular=returnAttribute(newAttribute.getName());
-        } catch(Exception e) {
-            manipular=null;
-        }
-
-        //manipular=null;
-        if (manipular==null) {
-            myAttributes.add(newAttribute);
-        } else {
-            myAttributes.remove(manipular);
-            myAttributes.add(newAttribute);
-        }
+    public void clearAttributes(){
+        currentGroup.clearAttributes();
     }
 
+    public void returnAttribute(int count){
+        currentGroup.returnAttribute(count);
+    }
+
+    public boolean changeGroup(String Name){
+        Group bufferGroup;
+        bufferGroup=currentGroup;
+        currentGroup=Groups.get(Name);
+        if (currentGroup==null) {
+            return false;
+        }
+        return true;
+    }
+
+    public void assignGroupCount(String attrName){
+        this.setAttribute("Numeric",attrName,null,currentGroup.getCount(),0);
+    }
+
+    public boolean addGroup(String Name) {
+        Group bufferGroup;
+        bufferGroup=currentGroup;
+        currentGroup=Groups.get(Name);
+        if (currentGroup!=null) return false;
+        Groups.put(Name,new Group());
+        return true;
+    }
+
+    public boolean copyFromGroup(String groupName,String source, String dest){
+        Group sourceGroup=Groups.get(groupName);
+        if (sourceGroup==null) return false;
+        Attribute sourceAttr =sourceGroup.returnAttribute(source);
+        if (sourceAttr==null) return false;
+        sourceAttr.setName(dest);
+        this.setAttribute(sourceAttr);
+        return true;
+    }
+
+    public boolean copyFromGroup(String groupName,Attribute source, String dest) {
+        Group sourceGroup=Groups.get(groupName);
+        if (sourceGroup==null) return false;
+        Attribute sourceAttr =sourceGroup.returnAttribute(source.getName());
+        if (sourceAttr==null) return false;
+        sourceAttr.setName(dest);
+        this.setAttribute(sourceAttr);
+        return true;
+    }
+
+    public boolean copyFromGroup(String groupName,Attribute source, Attribute dest) {
+        return false;
+    }
+
+     public boolean copyFromGroup(String groupName,String source, Attribute dest) {
+        return false;
+    }
+    
+    public Attribute returnAttribute(String Name) {
+        return currentGroup.returnAttribute(Name);
+    }
+
+    public void setAttribute(Attribute newAttribute) {
+        currentGroup.setAttribute(newAttribute);
+    }
     public void send_message(String message, String sender, Message type) { //boolean public_message
-
         try {
             if (type==Message.RAW) { //raw message
                 this.session.getBasicRemote().sendText(message);
