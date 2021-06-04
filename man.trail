@@ -1,9 +1,0 @@
----
-*GET_ATTRIBUTE*
-hitpoints
-5
----
----
-*GOTO*
-play.trail
----
