@@ -1,3 +1,4 @@
+package trails2;
 
 class console {
     public void print(String text){

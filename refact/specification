@@ -10,6 +10,9 @@ replaces the name of the variable with it's text. This will be true within ANY o
 
 With no parenthetic qualifiers, the name refers to (0) index (all variables are potentially arrays).
 With a qualifier, that becomes a reference to a specific array value. 
+
+All Objects - including the player - are entities. Entities must support in/out communication with other entities.
+Entities can be world entities (everything trails is executing can see them) or private entities (only the entity that spawned can see them.)  Entities can also share private entities that they own. 
 -------------
 Output Module
     statement
@@ -42,7 +45,7 @@ Prints text to the screen.  (Even in a 3D game, there must be some way of printi
 set:
     VariableName
     Value
-If this value is numerical in nature, then the value will be stored as an integer.
+If this value is numerical in nature, then the value will be stored as an float.
 ----------------
 AskMultiple
     (variable){value}
