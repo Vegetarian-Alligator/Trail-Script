@@ -1,0 +1,82 @@
+Trails
+Minimum specification for this language.  The point of the language is really to be able to distribute to multiple formats quickly; for example, you could write a text game that would work either on the command line or in the browser, without having to modify your code.  
+
+This in an interpreted langauge.  You start the language and specify a file for it to follow.  There should be a drag/drop user interface to follow as well, because this code is really a secondary method of writing such a file. 
+
+[variable()]
+
+replaces the name of the variable with it's text. This will be true within ANY of the following interpreted value.
+[[test]] should take the value of test, find the variable that is of that name, and then find the value of *that* variable.
+
+With no parenthetic qualifiers, the name refers to (0) index (all variables are potentially arrays).
+With a qualifier, that becomes a reference to a specific array value. 
+-------------
+Output Module
+    statement
+    parameters
+    Tells the program what output modue you would like to use.
+    This MUST be the first command.  For example, if the output module is "console" whenever the program is loaded, the intepreter just 
+    plays the program out in it's command line.
+    
+    If the module accepts parameters, then you can enter them below.  For example: color of the text by default.
+--------------
+errormode 
+    (error) 
+    (mode)
+
+Errors:
+NoCommand
+NoVariable
+DividebyZero
+Unitilized Variable
+
+ErrorModes:
+(ignore) This will just keep executing the program.
+(print message) This will print an error, message, using whatever the output module uses for "print"
+(crash) This will tell the game to stop executing at all. 
+--------------
+print
+    Text
+Prints text to the screen.  (Even in a 3D game, there must be some way of printing text to the screen.)
+---------------
+set:
+    VariableName
+    Value
+If this value is numerical in nature, then the value will be stored as an integer.
+----------------
+AskMultiple
+    (variable){value}
+    (){}
+    (){}
+Let's the user pick from a series of options, each of which are in ().  Then, it saves whatever value is in {} to the variable.  
+If there is no {} specified, or no value inside of it, then the variable's value will become that of the option.
+
+I should add some way of letting the options be chosen by the user without a horrible branch of if statements.
+-----------------
+AskNumeric
+    variable
+    
+This will ask the user for a numeric value.
+-----------------
+Ask
+    variable
+    
+This will ask the user for some text response, and assign it to the appropriate variable.
+-----------------
+if value <>= value 
+    Commands
+Otherwise
+    Commands
+The parser checks if value is greater than, equal to, or less than the value
+-----------------
+charSlice
+    variable
+    value
+    
+Chooses the xth character of the 
+------------------
+charLength
+    variable
+    targetvariable
+Save the character length of variable into targetvariable.
+-------------------
