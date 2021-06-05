@@ -11,3 +11,11 @@ set
     42
 print
     Because the answer to life, the universe and everything is [answer].
+set
+    animal
+    dog
+set
+    dog
+    Great Dane
+print
+    Sherry owns an animal, which is a [animal], a [[animal]] in fact.

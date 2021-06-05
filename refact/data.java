@@ -1,13 +1,18 @@
 package trails2;
 
 //This class holds all of the variables created by the user.
+//It is designed so that each variable can be an array (a list) or a single variable, by default.
 
 class data{
+
     String stringValue;
     double numericValue;
     String myName="";
     boolean isNumeric;
     
+    //HashMap<String,String> stringValues = new HashMap<String,String>();
+    //HashMap<String,Double> numericValues = new HashMap<String,Double>();
+    //Seriously considered doing that, but we would have to implement so sort of an ordered hash in order to do so.  
     
     data (String name, String data){
         this.myName=name;

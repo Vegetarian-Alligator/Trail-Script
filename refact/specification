@@ -13,6 +13,8 @@ With a qualifier, that becomes a reference to a specific array value.
 
 All Objects - including the player - are entities. Entities must support in/out communication with other entities.
 Entities can be world entities (everything trails is executing can see them) or private entities (only the entity that spawned can see them.)  Entities can also share private entities that they own. 
+
+The /slash shall serve as an escape in string literals.
 -------------
 Output Module
     statement

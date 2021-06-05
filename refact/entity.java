@@ -5,9 +5,14 @@ import java.util.*;
 
 
 class entity extends Thread{
-
+    outputInterface myOut;
     LinkedList<data> myVars= new LinkedList<data>();
-
+    int nest=1;
+    
+    entity(outputInterface myOut){
+        this.myOut=myOut;
+    }
+    
     @Override
     public void run() {
         System.out.println("The new entity has loaded.");
@@ -60,17 +65,17 @@ class entity extends Thread{
             try {
                 if (trailReader.hasNextLine()){
                     variableName=trailReader.nextLine();
-                    if (!(correctIndent(variableName,1))) throw new Exception("Bad formatting in set tag");
+                    if (!(correctIndent(variableName,nest))) throw new Exception("Bad formatting in set tag");
                 } else throw new Exception("document ended in set tag");
                 
                 if (trailReader.hasNextLine()){
                     value=trailReader.nextLine();
-                    if (!(correctIndent(value,1))) throw new Exception("Bad formatting in set tag");
+                    if (!(correctIndent(value,nest))) throw new Exception("Bad formatting in set tag");
                 } else throw new Exception("document ended in set tag");
                 //System.out.println("We are iterating over a variable.");
                 data myVar=pointToVariable(variableName.trim());
                 //System.out.println("The name of the variable is: " + myVar.getName() + " the value being added is " + value);
-                myVar.changeData(value);
+                myVar.changeData(value.trim());
             }catch (Exception e){
                 e.printStackTrace();
                 System.out.println("Exeception in setVariable " + e);
@@ -89,7 +94,7 @@ class entity extends Thread{
                     else {opens+=1;lastopen=i;}
                 }
             }
-            
+            System.out.println("total opens found was " + opens);
             for (int i =0; i< process.length(); i++){
                 if (process.charAt(i)=='['){
                     if (i > 0) {if (process.charAt(i-1)!='/') {closes+=1;lastclose=i;}}
@@ -103,6 +108,7 @@ class entity extends Thread{
             }
             
             while (opens !=0 && closes !=0){
+                System.out.println("Open the main loop.");
                 for (int i = lastopen;i<process.length();i++){
                     if (process.charAt(i)==']' && process.charAt(i-1)!='/') {
                         String nextName=process.substring(lastopen+1,i);
@@ -131,10 +137,10 @@ class entity extends Thread{
                         break; //This should send us back to search for the next group
                     }
                 }
-                if (opens != 0) {System.out.println("Exiting - you have mismatched parenthesis.  Result was: " + process);
-                System.exit(1);} //If you iterate through the whole of the string and don't find a matching '['
                     //then you have a mismatch
             }
+            if (opens != 0) {System.out.println("Exiting - you have mismatched parenthesis.  Result was: " + process);
+            System.exit(1);} //If you iterate through the whole of the string and don't find a matching '['
             //System.out.println("The final result of the parsing is: " + process);
             return process;
             
@@ -163,9 +169,9 @@ class entity extends Thread{
             while (trailReader.hasNextLine()){
                 content=trailReader.nextLine();
                 //System.out.println("Content is: " + content + " and the first character is " + (int)content.charAt(0) );
-                if (correctIndent(content, 1)) { //This is not very reliable, encoding issues?
+                if (correctIndent(content, nest)) { //This is not very reliable, encoding issues?
                     result+=content.substring(1);
-                    result+="\n";
+                    //result+="\n";
                     itemCount+=1;
                 }else{
                     //System.out.println("We are breaking now; the value of content is: " + content);
@@ -175,7 +181,7 @@ class entity extends Thread{
             if (trailReader.hasNextLine()==false) content=null;
             if (itemCount!=0) {
                 result=finalizeValue(result);
-                System.out.println(result);
+                myOut.print(result);
                 //System.out.println("returning " + content);
                 return content;
             }
