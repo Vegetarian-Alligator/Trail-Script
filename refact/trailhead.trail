@@ -10,4 +10,4 @@ set
     answer
     42
 print
-    Because the answer to life, the universe and everything is 42.
+    Because the answer to life, the universe and everything is [answer].

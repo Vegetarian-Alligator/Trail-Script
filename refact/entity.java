@@ -6,7 +6,6 @@ import java.util.*;
 
 class entity extends Thread{
 
-
     LinkedList<data> myVars= new LinkedList<data>();
 
     @Override
@@ -68,20 +67,92 @@ class entity extends Thread{
                     value=trailReader.nextLine();
                     if (!(correctIndent(value,1))) throw new Exception("Bad formatting in set tag");
                 } else throw new Exception("document ended in set tag");
-                System.out.println("We are iterating over a variable.");
+                //System.out.println("We are iterating over a variable.");
+                data myVar=pointToVariable(variableName.trim());
+                //System.out.println("The name of the variable is: " + myVar.getName() + " the value being added is " + value);
+                myVar.changeData(value);
+            }catch (Exception e){
+                e.printStackTrace();
+                System.out.println("Exeception in setVariable " + e);
+            }
+        }
+        
+        private String finalizeValue(String process){
+            int opens=0;
+            int closes=0;
+            int lastopen=-1;
+            int lastclose=-1;
+            
+            for (int i =0; i< process.length(); i++){
+                if (process.charAt(i)=='['){
+                    if (i > 0) {if (process.charAt(i-1)!='/') {opens+=1;lastopen=i;}}
+                    else {opens+=1;lastopen=i;}
+                }
+            }
+            
+            for (int i =0; i< process.length(); i++){
+                if (process.charAt(i)=='['){
+                    if (i > 0) {if (process.charAt(i-1)!='/') {closes+=1;lastclose=i;}}
+                    else {System.out.println("You can't open with a ] without an escape character");System.exit(1);}
+                }
+            }
+            
+            if (opens != closes || lastopen > lastclose) { //Cathes incoomplete bracket statements or the obvious closing bracket before opening bracket.
+                System.out.println("Fatal Error - excess closed or excess open brackets");
+                System.exit(1);
+            }
+            
+            while (opens !=0 && closes !=0){
+                for (int i = lastopen;i<process.length();i++){
+                    if (process.charAt(i)==']' && process.charAt(i-1)!='/') {
+                        String nextName=process.substring(lastopen+1,i);
+                        //System.out.println("The name of the data being accessed is: " + nextName);
+                        data myVar = pointToVariable(nextName);
+                        String replacement="";
+                        
+                        if (myVar.getStringValue() == null) {
+                            replacement=" NULL ";
+                        } else {
+                            replacement=myVar.getStringValue();
+                        }
+                        //System.out.println("The value of replacement is: " + replacement);
+                        process=process.substring(0,lastopen) + replacement + process.substring(i+1,process.length());
+                        //System.out.println("process is: " + process);
+                        opens-=1;
+                        closes-=1;
+                        
+                        if (opens !=0) for (int z =0; z< process.length(); z++){
+                            if (process.charAt(z)=='['){
+                                if (process.charAt(z-1)!='/') lastopen=z;
+                                else lastopen=z;
+                            }
+                        }
+                        //System.out.println("breaking");
+                        break; //This should send us back to search for the next group
+                    }
+                }
+                if (opens != 0) {System.out.println("Exiting - you have mismatched parenthesis.  Result was: " + process);
+                System.exit(1);} //If you iterate through the whole of the string and don't find a matching '['
+                    //then you have a mismatch
+            }
+            //System.out.println("The final result of the parsing is: " + process);
+            return process;
+            
+
+        }
+        
+        private data pointToVariable(String name){ //This creates a variable or points to a variable of the given name.
                 Iterator<data>  itr = myVars.iterator();
                 data inspect;
                 while (itr.hasNext()) {
                     inspect = itr.next();
-                    if (inspect.myName.equals(variableName)){
-                        inspect.changeData(value);
-                        return;
+                    if (inspect.myName.equals(name)){
+                        return inspect;
                     }
                 }
-                myVars.add(new data(variableName,value));
-            }catch (Exception e){
-                System.out.println("Exeception in setVariable");
-            }
+                data newData=new data(name,null);
+                myVars.add(newData);
+                return newData;
         }
         
         private String printTrails(Scanner trailReader){
@@ -103,6 +174,7 @@ class entity extends Thread{
             }
             if (trailReader.hasNextLine()==false) content=null;
             if (itemCount!=0) {
+                result=finalizeValue(result);
                 System.out.println(result);
                 //System.out.println("returning " + content);
                 return content;
