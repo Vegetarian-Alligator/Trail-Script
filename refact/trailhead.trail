@@ -4,11 +4,11 @@ print
     And for all intents and pourposes, this is going to be the second line.
 print
     But, in spirit, this isn't really the third.
-print
-    This is sort of the fourth though.
 set
     answer
     42
+print
+    This is sort of the fourth though
 print
     Because the answer to life, the universe and everything is [answer].
 set
@@ -19,3 +19,17 @@ set
     Great Dane
 print
     Sherry owns an animal, which is a [animal], a [[animal]] in fact.
+print
+    Okay, now I'm doing something else.
+    I'm testing an array.
+set
+    firstIndex
+    0
+set
+    arrTest([firstIndex])
+    Element #1
+set
+    arrTest(1)
+    Element #2
+print
+    So, arrTest(0) is [arrTest(0)] and arrTest(1) is [arrTest(1)]

@@ -37,3 +37,13 @@ IMPLEMENTATION OF THESE ITEMS SHOULD CONSTITUTE TRAIL-SCRIPT V 0.3
 -Implement thread safety / multiplayer server
 -Allow the user to choose logging levels / fatality errors
 -If required for security reasons, add input filtering
+
+IMPLEMENTATION OF THESE ITEMS SHOULD CONSTITUTE TRAIL-SCRIPT V 0.4
+
+
+
+*******************
+LIST OF KNOWN BUGS
+*******************
+
+incorrect command given can loop forever and ever.

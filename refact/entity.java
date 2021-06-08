@@ -5,6 +5,8 @@ import java.util.*;
 
 
 class entity extends Thread{
+    private String modifyName = "";
+    private int lastIndex=-1;
     outputInterface myOut;
     LinkedList<data> myVars= new LinkedList<data>();
     int nest=1;
@@ -44,7 +46,7 @@ class entity extends Thread{
                 
                 if (nextCommand.equals("set")){
                     try{
-                    setVariable(trailReader);
+                        setVariable(trailReader);
                     }catch (Exception e){
                         System.out.println("There was a problem trying to call set");
                     }
@@ -62,10 +64,17 @@ class entity extends Thread{
             String variableName;
             String value;
             String error="";
+            int index=-2;
             try {
                 if (trailReader.hasNextLine()){
                     variableName=trailReader.nextLine();
+                    //variableName=variableName.trim();
                     if (!(correctIndent(variableName,nest))) throw new Exception("Bad formatting in set tag");
+                    variableName=finalizeValue(variableName); //This 
+                    System.out.println("Output from finalizeValue is \"" + variableName + "\"");
+                    index=arrayFinder(variableName);
+                    if (index > -1) variableName=modifyName;
+                    //System.out.println("Name of the variable is: \"" + variableName + "\"");
                 } else throw new Exception("document ended in set tag");
                 
                 if (trailReader.hasNextLine()){
@@ -75,11 +84,68 @@ class entity extends Thread{
                 //System.out.println("We are iterating over a variable.");
                 data myVar=pointToVariable(variableName.trim());
                 //System.out.println("The name of the variable is: " + myVar.getName() + " the value being added is " + value);
-                myVar.changeData(value.trim());
+                if (index<0) myVar.changeData(value.trim());
+                else myVar.changeData(value.trim(),index);
+                //System.out.println("The name of the variable being accessed is: " + myVar.getName());
             }catch (Exception e){
                 e.printStackTrace();
                 System.out.println("Exeception in setVariable " + e);
             }
+        }
+        
+        private int arrayFinder(String variable){ //Bug - you can have a variable with no name at this point
+            int open=-1;
+            int close=-1;
+            
+            for (int i =0; i< variable.length(); i++){
+                if (variable.charAt(i)=='('){
+                    if (open==-1) open=i;
+                    else {
+                        System.out.println("More than one parens.  Multidimensional arrays may be supported in a future version.");
+                        System.exit(1);
+                    }
+                }
+            }
+            
+            for (int i =0; i< variable.length(); i++){
+                if (variable.charAt(i)==')'){
+                    if (close==-1) close=i;
+                    else {
+                        System.out.println("More than one parens.  Multidimensional arrays may be supported in a future version.");
+                        System.exit(1);
+                    }
+                }
+            }
+            
+            if (open>close){
+                System.out.println("Parens out of order.");
+                System.exit(1);
+            }
+            
+            if ((open==-1 && close != -1) || (close==-1 && open !=-1 )){
+                System.out.println("Mismatched parens");
+                System.exit(1);
+            }
+            
+            if (open == close && open ==-1 ) {
+                return -1;
+            }
+            
+            String target=variable.substring(open+1,close);
+            target.trim();
+            //System.out.println("Array target is: " + target);
+            try {
+                //System.out.println("The substring in question is: " + variable.substring(open,close+1));
+                modifyName=variable.replace(variable.substring(open,close+1),"");
+                modifyName=modifyName.trim();
+                lastIndex=Integer.parseInt(target);
+                //System.out.println("I have change variable to \"" + modifyName + "\"");
+                return Integer.parseInt(target);
+            }catch (NumberFormatException e){
+                System.out.println("Bad array reference");
+                System.exit(1);
+            }
+            return -1;
         }
         
         private String finalizeValue(String process){
@@ -94,6 +160,7 @@ class entity extends Thread{
                     else {opens+=1;lastopen=i;}
                 }
             }
+            
             System.out.println("total opens found was " + opens);
             for (int i =0; i< process.length(); i++){
                 if (process.charAt(i)=='['){
@@ -108,15 +175,21 @@ class entity extends Thread{
             }
             
             while (opens !=0 && closes !=0){
-                System.out.println("Open the main loop.");
+                //System.out.println("Open the main loop.");
                 for (int i = lastopen;i<process.length();i++){
                     if (process.charAt(i)==']' && process.charAt(i-1)!='/') {
                         String nextName=process.substring(lastopen+1,i);
-                        //System.out.println("The name of the data being accessed is: " + nextName);
+                        int variable=arrayFinder(nextName);
+                        //if (variable==-1) variable=0;
+                    
+                        if (variable!=-1) {
+                            nextName=modifyName;
+                        }
+                        
                         data myVar = pointToVariable(nextName);
                         String replacement="";
                         
-                        if (myVar.getStringValue() == null) {
+                        if (myVar.getStringValue() == null) { //If the variable does not *have* a value, then we just write NULL.
                             replacement=" NULL ";
                         } else {
                             replacement=myVar.getStringValue();
