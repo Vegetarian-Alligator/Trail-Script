@@ -188,11 +188,19 @@ class entity extends Thread{
                         
                         data myVar = pointToVariable(nextName);
                         String replacement="";
-                        
-                        if (myVar.getStringValue() == null) { //If the variable does not *have* a value, then we just write NULL.
+                        if (variable==-1) if (myVar.getStringValue() == null) { //If the variable does not *have* a value, then we just write NULL.
                             replacement=" NULL ";
                         } else {
                             replacement=myVar.getStringValue();
+                        }
+                        
+                        if (variable!=-1){
+                        if (myVar.getStringValue(variable) == null) { //If the variable does not *have* a value, then we just write NULL.
+                            replacement=" NULL ";
+                        } else {
+                            replacement=myVar.getStringValue(variable);
+                        }
+                        
                         }
                         //System.out.println("The value of replacement is: " + replacement);
                         process=process.substring(0,lastopen) + replacement + process.substring(i+1,process.length());
