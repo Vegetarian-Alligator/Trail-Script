@@ -54,10 +54,40 @@ class entity extends Thread{
                     else nextCommand=null;
                     continue;
                 }
+                
+                if (nextCommand.equals("ask")){
+                    ask(trailReader);
+                    if (trailReader.hasNextLine()) nextCommand=trailReader.nextLine();
+                    else nextCommand=null;
+                    continue;
+                }
                 if (nextCommand != null) System.out.println("incorrect command given: " + nextCommand);
             }
             if (nextCommand != null) System.out.println("incorrect command given: " + nextCommand);
             //else System.out.println("next command is " + nextCommand);
+        }
+        
+        private void ask(Scanner trailReader){
+        try {
+            if (trailReader.hasNextLine()){
+                String findVar=trailReader.nextLine();
+                if (correctIndent(findVar,1)){
+                    int index=-1;
+                    index=arrayFinder(findVar);
+                    findVar=finalizeValue(findVar);
+                    String answer;
+                    answer=myOut.ask();
+                    data thisVar=pointToVariable(findVar.trim());
+                    if (index==-1) {
+                        thisVar.changeData(answer);
+                    }else{
+                        thisVar.changeData(answer,index);
+                    }
+                }
+            }else throw new Exception("Error in ask function.");
+        } catch (Exception e) {
+            System.out.println("Error in ask function.");
+        }
         }
         
         private void setVariable(Scanner trailReader){
@@ -71,7 +101,7 @@ class entity extends Thread{
                     //variableName=variableName.trim();
                     if (!(correctIndent(variableName,nest))) throw new Exception("Bad formatting in set tag");
                     variableName=finalizeValue(variableName); //This 
-                    System.out.println("Output from finalizeValue is \"" + variableName + "\"");
+                    //System.out.println("Output from finalizeValue is \"" + variableName + "\"");
                     index=arrayFinder(variableName);
                     if (index > -1) variableName=modifyName;
                     //System.out.println("Name of the variable is: \"" + variableName + "\"");
@@ -161,7 +191,7 @@ class entity extends Thread{
                 }
             }
             
-            System.out.println("total opens found was " + opens);
+            //System.out.println("total opens found was " + opens);
             for (int i =0; i< process.length(); i++){
                 if (process.charAt(i)=='['){
                     if (i > 0) {if (process.charAt(i-1)!='/') {closes+=1;lastclose=i;}}
