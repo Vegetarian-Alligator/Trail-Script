@@ -5,13 +5,13 @@ TO-DO LIST:
 
 IMPLEMENTATION OF THESE ITEMS SHOULD CONSTITUTE TRAIL-SCRIPT V 0.1
 
--Finish implementing arrays.
+**Finish implementing arrays** Finished
 
--Right now, all numbers are printed with a decimal point - this can
+**Right now, all numbers are printed with a decimal point - this can
 make certain things very confusing, such as retreiving variables with
-numeric names.
+numeric names** Finished
 
--Ask function, for arbitrary user data
+***Ask function, for arbitrary user data***
 
 -MulitpleAsk function, specified to be used when the user wants
 to be able to recurse through the entire tree.

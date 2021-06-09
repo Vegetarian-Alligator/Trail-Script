@@ -33,3 +33,9 @@ set
     Element #2
 print
     So, arrTest(0) is [arrTest(0)] and arrTest(1) is [arrTest(1)]
+print
+    So, your turn, what is your name?
+ask
+    name
+print
+    You said your name was [name].
