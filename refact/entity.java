@@ -2,11 +2,14 @@ package trails2;
 
 import java.io.*;
 import java.util.*;
-
+import java.util.ArrayList;
 
 class entity extends Thread{
     private String modifyName = "";
     private int lastIndex=-1;
+    private int indentLevel;
+    
+    
     outputInterface myOut;
     LinkedList<data> myVars= new LinkedList<data>();
     int nest=1;
@@ -18,8 +21,12 @@ class entity extends Thread{
     @Override
     public void run() {
         System.out.println("The new entity has loaded.");
+        this.indentLevel=0;
+        
         try {
-            parseTrails();
+            File trailFile = new File("C:\\Users\\Mike\\Documents\\trails\\Trail-Script\\refact\\trailhead.trail");
+            Scanner trailReader = new Scanner(trailFile);
+            parseTrails(trailReader, 0);
         } catch (Exception e){
             e.printStackTrace();
             System.out.println(e);
@@ -27,26 +34,36 @@ class entity extends Thread{
     }
 
     private boolean correctIndent(String content,int level){ //This should be modified to allow nested indentation, hence the useless parameter
-       
-       if (content.charAt(0)==9) return true;
-       if (content.length() >= 4) if (content.substring(0,4).equals("    ")) return true;
+       if (countIndent(content)==level) return true;
        return false;
     }
     
-    private void parseTrails() throws FileNotFoundException{
-            File trailFile = new File("C:\\Users\\Mike\\Documents\\trails\\Trail-Script\\refact\\trailhead.trail");
-            Scanner trailReader = new Scanner(trailFile);
+    private int countIndent(String content) {
+        int levelsCounted=0;
+        boolean foundTab=false;
+        for (int i = 0; i < content.length(); i++){
+            if (content.charAt(i)==9) {levelsCounted++;foundTab=true;}
+            if (content.length() >= 4*(i+1)) if (content.substring(0,4).equals("    ")) {levelsCounted++; foundTab=true;}
+            if (foundTab==true) {foundTab=false;continue;}
+            break;
+            //Nope, you can't have huge spaces in variables as it turns out.  Not if we respect spaces as tabs.  Nor can you have tabs in variables, it seems...
+        }
+        return levelsCounted;
+    }
+    
+    private void parseTrails(Scanner trailReader, int myDepth) throws FileNotFoundException{
             String nextCommand="";
             if (trailReader.hasNextLine())  nextCommand=trailReader.nextLine();
             while (trailReader.hasNextLine()) {
+                if (!(correctIndent(nextCommand,myDepth))) return; // This would be a good place to add an error message
                 if (nextCommand.equals("print")){
-                    nextCommand=printTrails(trailReader);
+                    nextCommand=printTrails(trailReader,myDepth);
                     continue;
                 }
                 
                 if (nextCommand.equals("set")){
                     try{
-                        setVariable(trailReader);
+                        setVariable(trailReader,myDepth);
                     }catch (Exception e){
                         System.out.println("There was a problem trying to call set");
                     }
@@ -56,9 +73,15 @@ class entity extends Thread{
                 }
                 
                 if (nextCommand.equals("ask")){
-                    ask(trailReader);
+                    ask(trailReader,myDepth);
                     if (trailReader.hasNextLine()) nextCommand=trailReader.nextLine();
                     else nextCommand=null;
+                    continue;
+                }
+                
+                if (nextCommand.equals("if")){
+                    ifStatement(trailReader,myDepth);
+                    if (trailReader.hasNextLine()) nextCommand=trailReader.nextLine();
                     continue;
                 }
                 if (nextCommand != null) System.out.println("incorrect command given: " + nextCommand);
@@ -67,11 +90,58 @@ class entity extends Thread{
             //else System.out.println("next command is " + nextCommand);
         }
         
-        private void ask(Scanner trailReader){
+        private void ifStatement(Scanner trailReader, int myDepth) {
+            String variable;
+            String comparison;
+            String target;
+            variable = trailReader.nextLine();
+            try {
+                System.out.println("Starting if");
+                if (correctIndent(variable, myDepth+1)) {
+                    variable=finalizeValue(variable.trim());
+                }else throw new Exception("could not find first value");
+                System.out.println("Done with variable");
+                comparison=trailReader.nextLine();
+                if (correctIndent(comparison,myDepth+1)){
+                    if (finalizeValue(comparison.trim()).equals("=")) {
+                        comparison="=";
+                    }else throw new Exception("Comparator is not recognzied.  Given was |" + comparison + "|");
+                }else throw new Exception("Comparator not found");
+                System.out.println("Done with coparison");
+                target=trailReader.nextLine();
+                if (correctIndent(target,myDepth+1)){
+                    target=finalizeValue(target.trim());
+                }else throw new Exception("Could not find second value.");
+                System.out.println("Done with target");
+                if (comparison.equals("=")) {
+                    System.out.println("Comparator has been read as = ");
+                    if (target.equals(variable)){
+                        System.out.println("Calling parseTrails");
+                         parseTrails(trailReader, myDepth+1);
+                    } else exitIfStatement(trailReader,myDepth);
+                    return;
+                }
+            }catch (Exception e) {
+                System.out.println("Error in if statement");
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+        
+        private void exitIfStatement(Scanner trailReader, int myDepth){ //This just reads lines until correctIndent is false.  After that, it breaks, which returns, leaving the scanner at the next statement that is not part of this if block.  
+            System.out.println("Exiting the if statement.");
+            while (trailReader.hasNextLine()) {
+                if (countIndent(trailReader.nextLine()) >= myDepth) continue; //Won't detect indentations that are larger
+                break;
+            }
+            return;
+        }
+        
+        private void ask(Scanner trailReader, int myDepth){
         try {
             if (trailReader.hasNextLine()){
                 String findVar=trailReader.nextLine();
-                if (correctIndent(findVar,1)){
+                if (correctIndent(findVar,myDepth+1)){
                     int index=-1;
                     index=arrayFinder(findVar);
                     findVar=finalizeValue(findVar);
@@ -90,7 +160,7 @@ class entity extends Thread{
         }
         }
         
-        private void setVariable(Scanner trailReader){
+        private void setVariable(Scanner trailReader,int myDepth){
             String variableName;
             String value;
             String error="";
@@ -99,7 +169,7 @@ class entity extends Thread{
                 if (trailReader.hasNextLine()){
                     variableName=trailReader.nextLine();
                     //variableName=variableName.trim();
-                    if (!(correctIndent(variableName,nest))) throw new Exception("Bad formatting in set tag");
+                    if (!(correctIndent(variableName,myDepth+1))) throw new Exception("Bad formatting in set tag");
                     variableName=finalizeValue(variableName); //This 
                     //System.out.println("Output from finalizeValue is \"" + variableName + "\"");
                     index=arrayFinder(variableName);
@@ -109,15 +179,15 @@ class entity extends Thread{
                 
                 if (trailReader.hasNextLine()){
                     value=trailReader.nextLine();
-                    if (!(correctIndent(value,nest))) throw new Exception("Bad formatting in set tag");
+                    if (!(correctIndent(value,myDepth+1))) throw new Exception("Bad formatting in set tag");
                 } else throw new Exception("document ended in set tag");
                 //System.out.println("We are iterating over a variable.");
                 data myVar=pointToVariable(variableName.trim());
-                //System.out.println("The name of the variable is: " + myVar.getName() + " the value being added is " + value);
-                if (index<0) myVar.changeData(value.trim());
+
+                if (index<0) myVar.changeData(value.trim()); //This is the only part that needs to be modified for a 
                 else myVar.changeData(value.trim(),index);
-                //System.out.println("The name of the variable being accessed is: " + myVar.getName());
-            }catch (Exception e){
+
+                }catch (Exception e){
                 e.printStackTrace();
                 System.out.println("Exeception in setVariable " + e);
             }
@@ -193,7 +263,7 @@ class entity extends Thread{
             
             //System.out.println("total opens found was " + opens);
             for (int i =0; i< process.length(); i++){
-                if (process.charAt(i)=='['){
+                if (process.charAt(i)==']'){
                     if (i > 0) {if (process.charAt(i-1)!='/') {closes+=1;lastclose=i;}}
                     else {System.out.println("You can't open with a ] without an escape character");System.exit(1);}
                 }
@@ -272,7 +342,7 @@ class entity extends Thread{
                 return newData;
         }
         
-        private String printTrails(Scanner trailReader){
+        private String printTrails(Scanner trailReader, int myDepth){
             //System.out.println("entering print");
             short itemCount=0;
             String result="";
@@ -280,7 +350,7 @@ class entity extends Thread{
             while (trailReader.hasNextLine()){
                 content=trailReader.nextLine();
                 //System.out.println("Content is: " + content + " and the first character is " + (int)content.charAt(0) );
-                if (correctIndent(content, nest)) { //This is not very reliable, encoding issues?
+                if (correctIndent(content, myDepth+1)) { //This is not very reliable, encoding issues?
                     result+=content.substring(1);
                     //result+="\n";
                     itemCount+=1;

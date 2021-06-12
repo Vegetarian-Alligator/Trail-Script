@@ -39,3 +39,17 @@ ask
     name
 print
     You said your name was [name].
+if
+    [name]
+    =
+    fedora
+    print
+        It seems that you know the secret code.
+if
+    [name]
+    =
+    bugsy
+    print
+        Welcome back, boss.
+    print
+        Come right this way, please.
