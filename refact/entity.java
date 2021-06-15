@@ -8,7 +8,8 @@ class entity extends Thread{
     private String modifyName = "";
     private int lastIndex=-1;
     private int indentLevel;
-    
+    private boolean initiate=true;
+    Scanner trailReader;
     
     outputInterface myOut;
     LinkedList<data> myVars= new LinkedList<data>();
@@ -25,7 +26,7 @@ class entity extends Thread{
         
         try {
             File trailFile = new File("C:\\Users\\Mike\\Documents\\trails\\Trail-Script\\refact\\trailhead.trail");
-            Scanner trailReader = new Scanner(trailFile);
+            trailReader = new Scanner(trailFile);
             parseTrails(trailReader, 0);
         } catch (Exception e){
             e.printStackTrace();
@@ -39,23 +40,32 @@ class entity extends Thread{
     }
     
     private int countIndent(String content) {
+        //System.out.println("Starting countIndent with " + content);
         int levelsCounted=0;
         boolean foundTab=false;
         for (int i = 0; i < content.length(); i++){
             if (content.charAt(i)==9) {levelsCounted++;foundTab=true;}
-            if (content.length() >= 4*(i+1)) if (content.substring(0,4).equals("    ")) {levelsCounted++; foundTab=true;}
+            if (content.length() >= 4*(i+1)) if (content.substring(i,4).equals("    ")) {levelsCounted++; foundTab=true;i+=3;}
             if (foundTab==true) {foundTab=false;continue;}
             break;
             //Nope, you can't have huge spaces in variables as it turns out.  Not if we respect spaces as tabs.  Nor can you have tabs in variables, it seems...
         }
+        //System.out.println("Starting countIndent, returning " + levelsCounted);
+        System.out.println("Levels counted="+levelsCounted);
         return levelsCounted;
     }
     
-    private void parseTrails(Scanner trailReader, int myDepth) throws FileNotFoundException{
+    private String parseTrails(Scanner trailReader, int myDepth) throws FileNotFoundException{
+            System.out.println("Entering parseTrails()");
             String nextCommand="";
-            if (trailReader.hasNextLine())  nextCommand=trailReader.nextLine();
+            if (initiate==true) {
+                if (trailReader.hasNextLine())  nextCommand=trailReader.nextLine();
+                initiate=false;
+            }
+            
             while (trailReader.hasNextLine()) {
-                if (!(correctIndent(nextCommand,myDepth))) return; // This would be a good place to add an error message
+                if (!(correctIndent(nextCommand,myDepth))) return nextCommand; // This would be a good place to add an error message
+                nextCommand=nextCommand.trim(); // This line only does anything when called from an if statement
                 if (nextCommand.equals("print")){
                     nextCommand=printTrails(trailReader,myDepth);
                     continue;
@@ -80,17 +90,22 @@ class entity extends Thread{
                 }
                 
                 if (nextCommand.equals("if")){
-                    ifStatement(trailReader,myDepth);
-                    if (trailReader.hasNextLine()) nextCommand=trailReader.nextLine();
+                    nextCommand = ifStatement(trailReader,myDepth);
+                    System.out.println("leaving an if statement");
+                    //if (trailReader.hasNextLine()) nextCommand=trailReader.nextLine();
                     continue;
                 }
-                if (nextCommand != null) System.out.println("incorrect command given: " + nextCommand);
+                if (nextCommand != null) {
+                    System.out.println("incorrect command given: inside loop:" + nextCommand);
+                    System.exit(1);
+                }
             }
-            if (nextCommand != null) System.out.println("incorrect command given: " + nextCommand);
+            if (nextCommand != null) System.out.println("incorrect command given: outside loop: " + nextCommand);
+            return null; //This should only be reached at the end of the parsing.
             //else System.out.println("next command is " + nextCommand);
         }
         
-        private void ifStatement(Scanner trailReader, int myDepth) {
+        private String ifStatement(Scanner trailReader, int myDepth) {
             String variable;
             String comparison;
             String target;
@@ -99,12 +114,15 @@ class entity extends Thread{
                 System.out.println("Starting if");
                 if (correctIndent(variable, myDepth+1)) {
                     variable=finalizeValue(variable.trim());
+                    System.out.println("variable value is now: " + variable);
                 }else throw new Exception("could not find first value");
                 System.out.println("Done with variable");
                 comparison=trailReader.nextLine();
+                System.out.println("rawcomparison="+comparison);
                 if (correctIndent(comparison,myDepth+1)){
                     if (finalizeValue(comparison.trim()).equals("=")) {
                         comparison="=";
+                        System.out.println("comparison being set to =");
                     }else throw new Exception("Comparator is not recognzied.  Given was |" + comparison + "|");
                 }else throw new Exception("Comparator not found");
                 System.out.println("Done with coparison");
@@ -117,24 +135,31 @@ class entity extends Thread{
                     System.out.println("Comparator has been read as = ");
                     if (target.equals(variable)){
                         System.out.println("Calling parseTrails");
-                         parseTrails(trailReader, myDepth+1);
-                    } else exitIfStatement(trailReader,myDepth);
-                    return;
+                        initiate=true;
+                         variable = parseTrails(trailReader, myDepth+1);
+                         return variable;
+                    } else return exitIfStatement(trailReader,myDepth);
+                    //return "";
                 }
             }catch (Exception e) {
                 System.out.println("Error in if statement");
                 e.printStackTrace();
                 System.exit(1);
             }
+            return null; // This line should never be gotten too; it compensates for system.exit above
         }
         
-        private void exitIfStatement(Scanner trailReader, int myDepth){ //This just reads lines until correctIndent is false.  After that, it breaks, which returns, leaving the scanner at the next statement that is not part of this if block.  
+        private String exitIfStatement(Scanner trailReader, int myDepth){ //This just reads lines until correctIndent is false.  After that, it breaks, which returns, leaving the scanner at the next statement that is not part of this if block.  
             System.out.println("Exiting the if statement.");
+            String debugger="";
             while (trailReader.hasNextLine()) {
-                if (countIndent(trailReader.nextLine()) >= myDepth) continue; //Won't detect indentations that are larger
+                debugger=trailReader.nextLine();
+                System.out.println("I'm seeing: " + debugger + " with count " + countIndent(debugger));
+                if (countIndent(debugger) > myDepth) continue; //Won't detect indentations that are larger
                 break;
             }
-            return;
+            System.out.println("returning from exitIf: " + debugger);
+            return debugger; //Potential bug if nothing is after an if statement.
         }
         
         private void ask(Scanner trailReader, int myDepth){
@@ -352,10 +377,9 @@ class entity extends Thread{
                 //System.out.println("Content is: " + content + " and the first character is " + (int)content.charAt(0) );
                 if (correctIndent(content, myDepth+1)) { //This is not very reliable, encoding issues?
                     result+=content.substring(1);
-                    //result+="\n";
                     itemCount+=1;
                 }else{
-                    //System.out.println("We are breaking now; the value of content is: " + content);
+                    System.out.println("We are breaking now; the value of content is: " + content);
                     break;
                 }
             }

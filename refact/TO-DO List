@@ -48,3 +48,4 @@ LIST OF KNOWN BUGS
 
 incorrect command given can loop forever and ever.
 If you use more than one data type inside of a variable, the behavoir is probably going to be bad for you.
+Potential bug if nothing is after the if statement that leads to return debugger;
